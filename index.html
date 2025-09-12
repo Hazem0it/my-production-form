@@ -316,18 +316,6 @@ function calculateDurationForRow(tr){
   updateRowColor(tr);
 }
 
-/* check if row empty (to ignore saving and to keep default white) */
-function isRowEmpty(tr){
-  const name = (tr.querySelector('.item-name')?.value || "").trim();
-  const start = (tr.querySelector('.start-date')?.value || "").trim();
-  const end = (tr.querySelector('.end-date')?.value || "").trim();
-  const tech = (tr.querySelector('.tech-list')?.value || "").trim();
-  const notes = (tr.querySelector('.notes')?.value || "").trim();
-  const unitsEl = tr.querySelector('.units');
-  const units = unitsEl ? (unitsEl.value + "").trim() : "";
-  return (name === "" && start === "" && end === "" && tech === "" && notes === "" && units === "");
-}
-
 /* update row color — default white if status empty or if row empty */
 function updateRowColor(tr){
   tr.classList.remove('status-done','status-progress','status-error');
@@ -370,6 +358,18 @@ function collectAllData(){
   return out;
 }
 
+/*
+  New function: isRowEmpty (adjusted)
+  This function now only checks for a critical field ('item-name') to decide if a row should be saved.
+  This is to prevent the form from sending empty data to Google Sheets.
+*/
+function isRowEmpty(tr){
+  const name = (tr.querySelector('.item-name')?.value || "").trim();
+  // We check only the item name. If the user enters anything, the row will be saved.
+  return name === "";
+}
+
+
 /* ربط زر الحفظ مع الدالة */
 byId('btnSave').addEventListener('click', saveAll);
 
@@ -391,7 +391,6 @@ function saveAll() {
     savedAt: new Date().toISOString()
   };
 
-  // تأكد من تحديث هذا الرابط بالرابط الخاص بك
   const scriptURL = 'https://script.google.com/macros/s/AKfycbz5D8LLFFl_CVQAKMcPwq4SlY1p3l_kK2CD03mwmugj0xnnQdKXsmRM419HFkMcXJChQA/exec';
 
   const formData = JSON.stringify(payload);
@@ -527,5 +526,3 @@ window.addEventListener('load', init);
 
 </body>
 </html>
-
-
