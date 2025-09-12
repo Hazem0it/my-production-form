@@ -1,0 +1,518 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>متابعة إنتاج — كامل</title>
+<style>
+  body{font-family: Tahoma, Arial; direction:rtl; background:#f6f8fb; margin:16px; color:#222}
+  h1{text-align:center; color:#0b4f8a; margin-bottom:12px}
+  .top-row{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-bottom:12px}
+  .top-row label{display:flex;flex-direction:column;min-width:220px;font-size:13px}
+  .top-row input[type="text"], .top-row select{padding:6px;width:220px;box-sizing:border-box}
+
+  table.stage{width:100%;border-collapse:collapse;margin:18px 0;background:#fff;box-shadow:0 0 0 1px #e6eef8}
+  table.stage thead th{background:#0b6ed3;color:#fff;padding:8px;text-align:center}
+  table.stage thead tr.sub-header th{background:#dbeeff;color:#000;font-weight:600}
+  table.stage th, table.stage td{border:1px solid #c8d9ee;padding:6px;vertical-align:middle;text-align:center}
+  select,input[type="text"],input[type="number"],input[type="datetime-local"],textarea{width:100%;padding:6px;box-sizing:border-box;font-size:13px}
+  textarea{resize:none;min-height:40px}
+
+  .btn-square{width:28px;height:28px;border-radius:4px;border:0;cursor:pointer;font-weight:bold;display:inline-flex;align-items:center;justify-content:center}
+  .btn-add{background:#0b87ff;color:#fff}
+  .btn-del{background:#e74c3c;color:#fff}
+
+  /* row colors light */
+  tr.status-done{background:#e6f7ea}
+  tr.status-progress{background:#fffbe6}
+  tr.status-error{background:#fdecea}
+
+  /* tech select same width as client name */
+  .tech-select{width:220px!important}
+
+  @media (max-width:900px){
+    .top-row label{min-width:150px;width:48%}
+    .top-row input[type="text"], .top-row select{width:100%}
+    table.stage td, table.stage th{font-size:12px;padding:4px}
+  }
+
+  .msg{font-size:13px;color:#0b6ed3;margin-left:8px}
+  .save-btn{padding:10px 16px;background:#0b6ed3;color:#fff;border:0;border-radius:6px;cursor:pointer}
+</style>
+</head>
+<body>
+<h1>متابعة إنتاج</h1>
+
+<div class="top-row">
+  <label>كود العميل
+    <input type="text" id="clientCode" placeholder="أدخل كود العميل (مفتاح)"/>
+  </label>
+
+  <label>اسم العميل
+    <input type="text" id="clientName" placeholder="اسم العميل"/>
+  </label>
+
+  <label>اسم المشروع
+    <input type="text" id="projectName" placeholder="اسم المشروع"/>
+  </label>
+
+  <label>اسم الفني (قائمة)
+    <select id="mainTech" class="tech-select"></select>
+  </label>
+
+  <label>أضف فني جديد
+    <div style="display:flex;gap:6px">
+      <input type="text" id="newTech" placeholder="اكتب اسم الفني"/>
+      <button type="button" id="btnAddTech" class="btn-square btn-add" title="أضف فني">+</button>
+    </div>
+  </label>
+
+  <div style="display:flex;align-items:center">
+    <span id="recallMsg" class="msg" style="display:none"></span>
+  </div>
+</div>
+
+<form id="prodForm">
+  <template id="tpl-basic-row">
+    <tr class="data-row">
+      <td>
+        <div style="display:flex;align-items:center;gap:6px;justify-content:flex-end">
+          <select class="item-type">
+            <option value="">نوع البند</option>
+            <option>هيكل</option>
+            <option>HPL</option>
+            <option>ضلفة</option>
+          </select>
+          <button type="button" class="btn-square btn-add btn-add-inline" title="أضف صف">+</button>
+        </div>
+      </td>
+
+      <td>
+        <div style="display:flex;gap:6px;align-items:center;justify-content:flex-end">
+          <input type="text" class="item-name" placeholder="اسم البند"/>
+          <button type="button" class="btn-square btn-del btn-del-inline" title="حذف صف">-</button>
+        </div>
+      </td>
+
+      <td><select class="tech-list"></select></td>
+      <td><input type="datetime-local" class="start-date"/></td>
+      <td><input type="datetime-local" class="end-date"/></td>
+      <td><input type="text" class="duration" readonly placeholder="ساعات"/></td>
+
+      <td colspan="2"><textarea class="notes" placeholder="ملاحظات..."></textarea></td>
+
+      <td>
+        <select class="status-select">
+          <option value="">---</option>
+          <option value="done">تم</option>
+          <option value="progress">تحت التشغيل</option>
+          <option value="error">متعطل / نقص خامة</option>
+        </select>
+      </td>
+    </tr>
+  </template>
+
+  <template id="tpl-advanced-row">
+    <tr class="data-row">
+      <td>
+        <div style="display:flex;align-items:center;gap:6px;justify-content:flex-end">
+          <select class="item-type">
+            <option value="">نوع البند</option>
+            <option>هيكل</option>
+            <option>HPL</option>
+            <option>ضلفة</option>
+          </select>
+          <button type="button" class="btn-square btn-add btn-add-inline" title="أضف صف">+</button>
+        </div>
+      </td>
+
+      <td>
+        <div style="display:flex;gap:6px;align-items:center;justify-content:flex-end">
+          <input type="text" class="item-name" placeholder="اسم البند"/>
+          <button type="button" class="btn-square btn-del btn-del-inline" title="حذف صف">-</button>
+        </div>
+      </td>
+
+      <td><select class="tech-list"></select></td>
+      <td><input type="datetime-local" class="start-date"/></td>
+      <td><input type="datetime-local" class="end-date"/></td>
+      <td><input type="text" class="duration" readonly placeholder="ساعات"/></td>
+      <td><input type="number" class="units" min="0" placeholder="عدد"/></td>
+      <td><textarea class="notes" placeholder="ملاحظات..."></textarea></td>
+      <td>
+        <select class="status-select">
+          <option value="">---</option>
+          <option value="done">تم</option>
+          <option value="progress">تحت التشغيل</option>
+          <option value="error">متعطل / نقص خامة</option>
+        </select>
+      </td>
+    </tr>
+  </template>
+
+  <div id="stagesContainer"></div>
+
+  <div style="text-align:center;margin-top:12px">
+    <button type="button" id="btnSave" class="save-btn">حفظ</button>
+    <span id="saveMsg" class="msg" style="display:none"></span>
+  </div>
+</form>
+
+<script>
+/* ======= Configuration (strict order as requested) ======= */
+const STAGES = [
+  { id: "التقطيع", basic: true },
+  { id: "المفحار", basic: true },
+  { id: "القشاط/الشريط", basic: true },
+  { id: "المكبس", basic: false },
+  { id: "المرحلية 1", basic: false },
+  { id: "CNC", basic: false },
+  { id: "المرحليه 2", basic: false },
+  { id: "التجميع", basic: false },
+  { id: "الجودة النهائية", basic: false }
+];
+
+/* technicians list persisted */
+let technicians = JSON.parse(localStorage.getItem('motabaa_techs') || '["محمود","يوسف","عبد الستار","محمد ربيع"]');
+
+/* ===== helpers ===== */
+function byId(id){ return document.getElementById(id); }
+function create(tag, html){ const e = document.createElement(tag); if(html) e.innerHTML = html; return e; }
+
+/* create all stage tables in order */
+function renderStageTables(){
+  const container = byId('stagesContainer');
+  container.innerHTML = '';
+  STAGES.forEach(stage=>{
+    const tbl = create('table');
+    tbl.className = 'stage';
+    tbl.id = 'stage-' + stage.id.replace(/\s+/g,'-').replace(/[^\w\-ء-ي]/g,'');
+    const title = `
+      <thead>
+        <tr><th colspan="${ stage.basic ? 9 : 9 }">${stage.id}</th></tr>
+        <tr>
+          <th>نوع البند + إضافة</th>
+          <th>اسم البند + حذف</th>
+          <th>اسم الفني</th>
+          <th>بدء</th>
+          <th>انتهاء</th>
+          <th>مدة تشغيل</th>
+          ${ stage.basic ? '<th colspan="2">ملاحظات</th>' : '<th>عدد الوحدات</th><th>ملاحظات</th>' }
+          <th>الحالة</th>
+        </tr>
+        <tr class="sub-header">
+          <th colspan="3"></th>
+          <th>تاريخ/ساعة</th>
+          <th>تاريخ/ساعة</th>
+          <th>(ساعات)</th>
+          ${ stage.basic ? '<th colspan="2">ملاحظات إضافية</th>' : '<th>عدد</th><th>ملاحظات إضافية</th>' }
+          <th></th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    `;
+    tbl.innerHTML = title;
+    container.appendChild(tbl);
+  });
+}
+
+/* append an empty row to given stage table id */
+function appendEmptyRowTo(stageId){
+  const stage = STAGES.find(s => ('stage-' + s.id.replace(/\s+/g,'-').replace(/[^\w\-ء-ي]/g,'')) === stageId || s.id === stageId);
+  if(!stage) return;
+  const tpl = document.getElementById(stage.basic ? 'tpl-basic-row' : 'tpl-advanced-row');
+  const clone = tpl.content.cloneNode(true);
+  const tr = clone.querySelector('tr');
+  tr.dataset.stage = stage.id;
+  const tbody = document.querySelector('#' + (stageId.startsWith('stage-') ? stageId : 'stage-' + stage.id.replace(/\s+/g,'-').replace(/[^\w\-ء-ي]/g,'')) + ' tbody');
+  tbody.appendChild(tr);
+  setupRow(tr);
+}
+
+/* setup row listeners */
+function setupRow(tr){
+  if(!tr) return;
+  // populate tech select
+  const techSel = tr.querySelector('.tech-list');
+  if(techSel) populateSingleTechSelect(techSel);
+
+  // add button (inline)
+  const addBtn = tr.querySelector('.btn-add-inline');
+  if(addBtn) addBtn.onclick = ()=> addRowAfter(tr);
+
+  // delete button
+  const delBtn = tr.querySelector('.btn-del-inline');
+  if(delBtn) delBtn.onclick = ()=> {
+    const tbody = tr.parentNode;
+    tr.remove();
+    if(tbody.querySelectorAll('tr').length === 0){
+      appendEmptyRowTo(tbody.parentNode.id);
+    }
+  };
+
+  // start/end change -> duration
+  const start = tr.querySelector('.start-date');
+  const end = tr.querySelector('.end-date');
+  [start,end].forEach(inp => { if(inp) inp.onchange = ()=> calculateDurationForRow(tr); });
+
+  // status -> color
+  const statusSel = tr.querySelector('.status-select');
+  if(statusSel) statusSel.onchange = ()=> updateRowColor(tr);
+}
+
+/* populate single tech select element */
+function populateSingleTechSelect(sel){
+  const cur = sel.value || "";
+  sel.innerHTML = '<option value="">-- اختر فني --</option>';
+  technicians.forEach(t => {
+    const o = document.createElement('option'); o.value = t; o.textContent = t; sel.appendChild(o);
+  });
+  if(cur) sel.value = cur;
+}
+
+/* populate all tech selects incl top mainTech */
+function populateTechSelects(){
+  document.querySelectorAll('.tech-list, #mainTech').forEach(sel => {
+    const cur = sel.value || "";
+    sel.innerHTML = '<option value="">-- اختر فني --</option>';
+    technicians.forEach(t => { const o=document.createElement('option'); o.value=t; o.textContent=t; sel.appendChild(o); });
+    if(cur) sel.value = cur;
+  });
+  // persist techs
+  localStorage.setItem('motabaa_techs', JSON.stringify(technicians));
+}
+
+/* add row after current tr */
+function addRowAfter(tr){
+  const stageId = tr.closest('table').id;
+  const stage = STAGES.find(s => 'stage-' + s.id.replace(/\s+/g,'-').replace(/[^\w\-ء-ي]/g,'') === stageId);
+  const tpl = document.getElementById(stage.basic ? 'tpl-basic-row' : 'tpl-advanced-row');
+  const clone = tpl.content.cloneNode(true);
+  const newTr = clone.querySelector('tr');
+  newTr.dataset.stage = stage.id;
+  tr.parentNode.insertBefore(newTr, tr.nextSibling);
+  setupRow(newTr);
+}
+
+/* calculate duration based on start/end and write to .duration and dataset */
+function calculateDurationForRow(tr){
+  const s = tr.querySelector('.start-date')?.value;
+  const e = tr.querySelector('.end-date')?.value;
+  const durEl = tr.querySelector('.duration');
+  if(s && e){
+    const sd = new Date(s), ed = new Date(e);
+    if(!isNaN(sd) && !isNaN(ed) && ed > sd){
+      const hours = (ed - sd) / 36e5;
+      if(durEl) durEl.value = hours.toFixed(2);
+      tr.dataset.duration = hours.toFixed(2);
+    } else {
+      if(durEl) durEl.value = "";
+      tr.dataset.duration = "";
+    }
+  } else {
+    if(durEl) durEl.value = "";
+    tr.dataset.duration = "";
+  }
+  updateRowColor(tr);
+}
+
+/* check if row empty (to ignore saving and to keep default white) */
+function isRowEmpty(tr){
+  const name = (tr.querySelector('.item-name')?.value || "").trim();
+  const start = (tr.querySelector('.start-date')?.value || "").trim();
+  const end = (tr.querySelector('.end-date')?.value || "").trim();
+  const tech = (tr.querySelector('.tech-list')?.value || "").trim();
+  const notes = (tr.querySelector('.notes')?.value || "").trim();
+  const unitsEl = tr.querySelector('.units');
+  const units = unitsEl ? (unitsEl.value + "").trim() : "";
+  return (name === "" && start === "" && end === "" && tech === "" && notes === "" && units === "");
+}
+
+/* update row color — default white if status empty or if row empty */
+function updateRowColor(tr){
+  tr.classList.remove('status-done','status-progress','status-error');
+  // if row empty -> keep white
+  if(isRowEmpty(tr)){
+    return;
+  }
+  const val = tr.querySelector('.status-select')?.value || "";
+  if(!val){
+    // if there is data but no status selected, remain white
+    return;
+  }
+  if(val === 'done') tr.classList.add('status-done');
+  else if(val === 'progress') tr.classList.add('status-progress');
+  else if(val === 'error') tr.classList.add('status-error');
+}
+
+/* collect data of all stages */
+function collectAllData(){
+  const out = {};
+  STAGES.forEach(stage=>{
+    const id = stage.id;
+    out[id] = [];
+    const tableId = 'stage-' + stage.id.replace(/\s+/g,'-').replace(/[^\w\-ء-ي]/g,'');
+    document.querySelectorAll('#' + tableId + ' tbody tr').forEach(tr=>{
+      if(isRowEmpty(tr)) return;
+      out[id].push({
+        type: tr.querySelector('.item-type')?.value || "",
+        itemName: tr.querySelector('.item-name')?.value || "",
+        tech: tr.querySelector('.tech-list')?.value || "",
+        start: tr.querySelector('.start-date')?.value || "",
+        end: tr.querySelector('.end-date')?.value || "",
+        duration: tr.dataset.duration || "",
+        units: tr.querySelector('.units') ? tr.querySelector('.units').value : "",
+        notes: tr.querySelector('.notes')?.value || "",
+        status: tr.querySelector('.status-select')?.value || ""
+      });
+    });
+  });
+  return out;
+}
+
+/* ربط زر الحفظ مع الدالة */
+byId('btnSave').addEventListener('click', saveAll);
+
+// START of the new code block for the saveAll function
+async function saveAll() {
+  const clientCode = byId('clientCode').value.trim();
+  if (!clientCode) {
+    alert('مطلوب: اكتب كود العميل قبل الحفظ');
+    return;
+  }
+
+  const payload = {
+    clientCode,
+    clientName: byId('clientName').value.trim(),
+    projectName: byId('projectName').value.trim(),
+    mainTech: byId('mainTech').value.trim(),
+    stages: collectAllData(),
+    technicians, // For local storage
+    savedAt: new Date().toISOString()
+  };
+
+  const scriptURL = 'https://script.google.com/macros/s/AKfycbwmA2gF-Gi1zigw4ClyxRQPRlW1KHKma7l57M4HdD9q-8Mz8gLeaIi572Fm925ybzIzfQ/exec';
+
+  try {
+    const response = await fetch(scriptURL, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+
+    const result = await response.json();
+    const msg = byId('saveMsg');
+    msg.style.display = 'inline';
+    
+    if (result.success) {
+      msg.textContent = 'تم الحفظ بنجاح إلى جوجل شيت!';
+      // Save a local backup in case of network issues later
+      localStorage.setItem('motabaa_' + clientCode, JSON.stringify(payload));
+      localStorage.setItem('motabaa_techs', JSON.stringify(technicians));
+    } else {
+      msg.textContent = 'حدث خطأ في الحفظ: ' + (result.error || 'غير معروف');
+      console.error('Save error:', result.error);
+    }
+
+    setTimeout(() => msg.style.display = 'none', 2200);
+
+  } catch (error) {
+    console.error('Fetch error:', error);
+    alert('حدث خطأ في الاتصال. الرجاء المحاولة مرة أخرى.');
+  }
+}
+// END of the new code block
+
+/* Load for client code (recall) — returns true if loaded */
+function loadForClientCode(code){
+  const key = 'motabaa_' + code;
+  const raw = localStorage.getItem(key);
+  const recallMsg = byId('recallMsg');
+  if(!raw){
+    recallMsg.style.display = 'inline';
+    recallMsg.textContent = 'كود جديد — جاهز لإدخال بيانات جديدة';
+    setTimeout(()=> recallMsg.style.display = 'none', 1600);
+    return false;
+  }
+  try{
+    const payload = JSON.parse(raw);
+    // top fields
+    byId('clientName').value = payload.clientName || '';
+    byId('projectName').value = payload.projectName || '';
+    if(Array.isArray(payload.technicians) && payload.technicians.length){
+      technicians = payload.technicians;
+    }
+    populateTechSelects();
+
+    // clear tables and rebuild rows using payload
+    STAGES.forEach(stage=>{
+      const tableId = 'stage-' + stage.id.replace(/\s+/g,'-').replace(/[^\w\-ء-ي]/g,'');
+      const tbody = document.querySelector('#' + tableId + ' tbody');
+      tbody.innerHTML = '';
+      const rows = (payload.stages && payload.stages[stage.id]) || [];
+      if(rows.length === 0){
+        appendEmptyRowTo(tableId);
+      } else {
+        rows.forEach(r => {
+          const tpl = document.getElementById(stage.basic ? 'tpl-basic-row' : 'tpl-advanced-row');
+          const clone = tpl.content.cloneNode(true);
+          const tr = clone.querySelector('tr');
+          tr.dataset.stage = stage.id;
+          // fill values
+          if(tr.querySelector('.item-type')) tr.querySelector('.item-type').value = r.type || "";
+          if(tr.querySelector('.item-name')) tr.querySelector('.item-name').value = r.itemName || "";
+          if(tr.querySelector('.tech-list')){
+            populateSingleTechSelect(tr.querySelector('.tech-list'));
+            tr.querySelector('.tech-list').value = r.tech || "";
+          }
+          if(tr.querySelector('.start-date')) tr.querySelector('.start-date').value = r.start || "";
+          if(tr.querySelector('.end-date')) tr.querySelector('.end-date').value = r.end || "";
+          if(r.duration) { tr.dataset.duration = r.duration; if(tr.querySelector('.duration')) tr.querySelector('.duration').value = r.duration; }
+          if(tr.querySelector('.units')) tr.querySelector('.units').value = r.units || "";
+          if(tr.querySelector('.notes')) tr.querySelector('.notes').value = r.notes || "";
+          if(tr.querySelector('.status-select')) tr.querySelector('.status-select').value = r.status || "";
+          tbody.appendChild(tr);
+          setupRow(tr);
+          updateRowColor(tr);
+        });
+      }
+    });
+
+    recallMsg.style.display = 'inline';
+    recallMsg.textContent = 'تم استرجاع بيانات الكود: ' + code;
+    setTimeout(()=> recallMsg.style.display = 'none', 1600);
+    return true;
+  } catch(err){
+    console.error('load error', err);
+    return false;
+  }
+}
+
+/* clientCode change handler -> recall */
+byId('clientCode').addEventListener('change', e=>{
+  const code = e.target.value.trim();
+  if(!code) return;
+  loadForClientCode(code);
+});
+
+/* add technician button */
+byId('btnAddTech').addEventListener('click', ()=> {
+  const v = byId('newTech').value.trim();
+  if(!v) return alert('اكتب اسم الفني ثم اضغط +');
+  if(!technicians.includes(v)) technicians.push(v);
+  byId('newTech').value = '';
+  populateTechSelects();
+});
+
+/* تهيئة الصفحة عند التحميل */
+function init(){
+  renderStageTables();
+  STAGES.forEach(s => appendEmptyRowTo('stage-' + s.id.replace(/\s+/g,'-').replace(/[^\w\-ء-ي]/g,'')));
+  populateTechSelects();
+}
+window.addEventListener('load', init);
+</script>
+</body>
+</html>
