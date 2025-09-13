@@ -164,11 +164,6 @@
   <div id="stagesContainer"></div>
 </form>
 
-<div style="text-align:center;margin-top:12px">
-    <button type="button" id="btnSave" class="save-btn">حفظ</button>
-    <span id="saveMsg" class="msg" style="display:none"></span>
-  </div>
-
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
 <script>
@@ -358,7 +353,8 @@ function saveAll() {
     savedAt: new Date().toISOString()
   };
 
-  const scriptURL = 'https://script.google.com/macros/s/AKfycby9ER5PB-MWEwi-JS3_kYrmE8ppbmFIkGw72-x17UMQbeNDBZqz2KAfPgIOidgQmQRSjA/exec';
+  // **استبدل هذا الرابط برابط Web App الخاص بك من Google Apps Script**
+  const scriptURL = 'https://script.google.com/macros/s/AKfycbwaI1nGepQmly-yuKxZEj0t29pM9tZe4VH5QRo-iKX89e9UKZ9-7sYXBU4PK86awDoEeg/exec';
 
   const formData = JSON.stringify(payload);
 
@@ -367,6 +363,10 @@ function saveAll() {
     alert("حدث خطأ في إعداد الصفحة. لا يمكن العثور على الإطار.");
     return;
   }
+
+  const msg = byId('saveMsg');
+  msg.style.display = 'inline';
+  msg.textContent = 'جاري الحفظ...';
 
   // Prepare a temporary form to send data
   const tempForm = document.createElement('form');
@@ -381,64 +381,100 @@ function saveAll() {
   input.value = formData;
   tempForm.appendChild(input);
 
+  const actionInput = document.createElement('input');
+  actionInput.type = 'hidden';
+  actionInput.name = 'action';
+  actionInput.value = 'save';
+  tempForm.appendChild(actionInput);
+
   document.body.appendChild(tempForm);
 
-  // Show message and submit the form
-  const msg = byId('saveMsg');
-  msg.style.display = 'inline';
-  msg.textContent = 'جاري الحفظ...';
-
-  // Listen for the iframe load event to know when the submission is done
   iframe.onload = () => {
-      msg.textContent = 'تم الحفظ بنجاح إلى جوجل شيت!';
-      setTimeout(() => msg.style.display = 'none', 2200);
-      iframe.onload = null; // Clear the listener
+    msg.textContent = 'تم الحفظ بنجاح!';
+    setTimeout(() => msg.style.display = 'none', 2200);
+    iframe.onload = null;
   };
 
   tempForm.submit();
   document.body.removeChild(tempForm);
 }
 
-function loadForClientCode(code){
-  const data = JSON.parse(localStorage.getItem('motabaa_' + code) || 'null');
-  if(!data) return alert('لا توجد بيانات محفوظة لهذا الكود');
-  byId('clientName').value = data.clientName || '';
-  byId('projectName').value = data.projectName || '';
-  technicians = data.technicians || technicians;
-  populateTechSelects();
-  renderStageTables();
-  STAGES.forEach(stage=>{
-    const tableId = 'stage-' + stage.id.replace(/\s+/g,'-').replace(/[^\w\-ء-ي]/g,'');
-    const tbody = document.querySelector('#' + tableId + ' tbody');
-    tbody.innerHTML = '';
-    (data.stages[stage.id] || []).forEach(row=>{
-      appendEmptyRowTo(tableId);
-      const tr = tbody.lastElementChild;
-      tr.querySelector('.item-type').value = row.type || "";
-      tr.querySelector('.item-name').value = row.itemName || "";
-      tr.querySelector('.tech-list').value = row.tech || "";
-      tr.querySelector('.start-date').value = row.start || "";
-      tr.querySelector('.end-date').value = row.end || "";
-      if(tr.querySelector('.units')) tr.querySelector('.units').value = row.units || "";
-      tr.querySelector('.notes').value = row.notes || "";
-      tr.querySelector('.status-select').value = row.status || "";
-      calculateDurationForRow(tr);
-      updateRowColor(tr);
-    });
-    if(tbody.querySelectorAll('tr').length === 0) appendEmptyRowTo(tableId);
-  });
+// **New function:** loadForClientCode to fetch data from Google Apps Script
+async function loadForClientCode(code) {
+    const recallMsg = byId('recallMsg');
+    recallMsg.style.display = 'inline';
+    recallMsg.textContent = 'جاري البحث عن البيانات...';
+
+    // **استبدل هذا الرابط برابط Web App الخاص بك من Google Apps Script**
+    const scriptURL = 'https://script.google.com/macros/s/AKfycbwaI1nGepQmly-yuKxZEj0t29pM9tZe4VH5QRo-iKX89e9UKZ9-7sYXBU4PK86awDoEeg/exec';
+
+    try {
+        const response = await fetch(`${scriptURL}?action=load&clientCode=${encodeURIComponent(code)}`);
+        const result = await response.json();
+
+        if (result.success && result.data) {
+            const data = result.data;
+            byId('clientName').value = data[2] || '';
+            byId('projectName').value = data[3] || '';
+            byId('mainTech').value = data[4] || '';
+
+            // This part handles filling the "التقطيع" stage table
+            const cutStageRows = [{
+                type: data[5] || "",
+                itemName: data[6] || "",
+                tech: data[7] || "",
+                start: data[8] || "",
+                end: data[9] || "",
+                duration: data[10] || "",
+                units: data[11] || "",
+                notes: data[12] || "",
+                status: data[13] || ""
+            }];
+
+            renderStageTables();
+            const cutTbody = document.querySelector('#stage-التقطيع tbody');
+            cutTbody.innerHTML = '';
+            
+            if (cutStageRows.length > 0) {
+              cutStageRows.forEach(r => {
+                  appendEmptyRowTo('stage-التقطيع');
+                  const tr = cutTbody.lastElementChild;
+                  tr.querySelector('.item-type').value = r.type;
+                  tr.querySelector('.item-name').value = r.itemName;
+                  tr.querySelector('.tech-list').value = r.tech;
+                  tr.querySelector('.start-date').value = r.start;
+                  tr.querySelector('.end-date').value = r.end;
+                  if (tr.querySelector('.units')) tr.querySelector('.units').value = r.units;
+                  tr.querySelector('.notes').value = r.notes;
+                  tr.querySelector('.status-select').value = r.status;
+                  calculateDurationForRow(tr);
+                  updateRowColor(tr);
+              });
+            } else {
+              appendEmptyRowTo('stage-التقطيع');
+            }
+
+            recallMsg.textContent = 'تم استرجاع بيانات العميل: ' + code;
+        } else {
+            recallMsg.textContent = 'لا توجد بيانات محفوظة لهذا الكود. يمكنك البدء في إدخال بيانات جديدة.';
+            byId('clientName').value = '';
+            byId('projectName').value = '';
+            renderStageTables();
+            STAGES.forEach(s => appendEmptyRowTo('stage-' + s.id.replace(/\s+/g,'-').replace(/[^\w\-ء-ي]/g,'')));
+        }
+    } catch (error) {
+        recallMsg.textContent = 'حدث خطأ أثناء الاتصال. يرجى المحاولة مرة أخرى.';
+        console.error("Error fetching data:", error);
+    } finally {
+        setTimeout(() => recallMsg.style.display = 'none', 4000);
+    }
 }
+
 
 function refreshSavedCodesDropdown(){
   const dropdown = byId('savedCodesDropdown');
-  const keys = Object.keys(localStorage).filter(k=>k.startsWith('motabaa_') && k !== 'motabaa_techs');
-  dropdown.innerHTML = '<option value="">استرجاع كود محفوظ...</option>';
-  keys.forEach(k=>{
-    const opt = document.createElement('option');
-    opt.value = k.replace('motabaa_','');
-    opt.textContent = k.replace('motabaa_','');
-    dropdown.appendChild(opt);
-  });
+  // Since we are now using Google Sheets, this dropdown will no longer be functional unless you add more code
+  dropdown.innerHTML = '<option value="">خاصية استرجاع البيانات تعمل الآن بزر "بحث"</option>';
 }
 
 /* Export JSON */
@@ -532,4 +568,3 @@ refreshSavedCodesDropdown();
 
 </body>
 </html>
-
