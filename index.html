@@ -354,7 +354,7 @@ function saveAll() {
   };
 
   // **استبدل هذا الرابط برابط Web App الخاص بك من Google Apps Script**
-  const scriptURL = 'https://script.google.com/macros/s/AKfycbwaI1nGepQmly-yuKxZEj0t29pM9tZe4VH5QRo-iKX89e9UKZ9-7sYXBU4PK86awDoEeg/exec';
+  const scriptURL = 'https://script.google.com/macros/s/AKfycbw391L0vbcpFn7GzRWammBLP_ygAH02SDLGD0KjJm8Z4z9m6krKYOUJTu4RcbSuab33uA/exec';
 
   const formData = JSON.stringify(payload);
 
@@ -406,53 +406,45 @@ async function loadForClientCode(code) {
     recallMsg.textContent = 'جاري البحث عن البيانات...';
 
     // **استبدل هذا الرابط برابط Web App الخاص بك من Google Apps Script**
-    const scriptURL = 'https://script.google.com/macros/s/AKfycbwaI1nGepQmly-yuKxZEj0t29pM9tZe4VH5QRo-iKX89e9UKZ9-7sYXBU4PK86awDoEeg/exec';
+    const scriptURL = 'https://script.google.com/macros/s/AKfycbw391L0vbcpFn7GzRWammBLP_ygAH02SDLGD0KjJm8Z4z9m6krKYOUJTu4RcbSuab33uA/exec';
 
     try {
-        const response = await fetch(`${scriptURL}?action=load&clientCode=${encodeURIComponent(code)}`);
+        const response = await fetch(`${scriptURL}?clientCode=${encodeURIComponent(code)}`);
         const result = await response.json();
 
         if (result.success && result.data) {
             const data = result.data;
-            byId('clientName').value = data[2] || '';
-            byId('projectName').value = data[3] || '';
-            byId('mainTech').value = data[4] || '';
-
-            // This part handles filling the "التقطيع" stage table
-            const cutStageRows = [{
-                type: data[5] || "",
-                itemName: data[6] || "",
-                tech: data[7] || "",
-                start: data[8] || "",
-                end: data[9] || "",
-                duration: data[10] || "",
-                units: data[11] || "",
-                notes: data[12] || "",
-                status: data[13] || ""
-            }];
-
+            byId('clientName').value = data.clientName || '';
+            byId('projectName').value = data.projectName || '';
+            technicians = data.technicians || technicians;
+            populateTechSelects();
             renderStageTables();
-            const cutTbody = document.querySelector('#stage-التقطيع tbody');
-            cutTbody.innerHTML = '';
-            
-            if (cutStageRows.length > 0) {
-              cutStageRows.forEach(r => {
-                  appendEmptyRowTo('stage-التقطيع');
-                  const tr = cutTbody.lastElementChild;
-                  tr.querySelector('.item-type').value = r.type;
-                  tr.querySelector('.item-name').value = r.itemName;
-                  tr.querySelector('.tech-list').value = r.tech;
-                  tr.querySelector('.start-date').value = r.start;
-                  tr.querySelector('.end-date').value = r.end;
-                  if (tr.querySelector('.units')) tr.querySelector('.units').value = r.units;
-                  tr.querySelector('.notes').value = r.notes;
-                  tr.querySelector('.status-select').value = r.status;
-                  calculateDurationForRow(tr);
-                  updateRowColor(tr);
-              });
-            } else {
-              appendEmptyRowTo('stage-التقطيع');
-            }
+
+            STAGES.forEach(stage => {
+                const tableId = 'stage-' + stage.id.replace(/\s+/g,'-').replace(/[^\w\-ء-ي]/g,'');
+                const tbody = document.querySelector('#' + tableId + ' tbody');
+                tbody.innerHTML = '';
+                const rows = data.stages[stage.id] || [];
+
+                if (rows.length === 0) {
+                    appendEmptyRowTo(tableId);
+                } else {
+                    rows.forEach(r => {
+                        appendEmptyRowTo(tableId);
+                        const tr = tbody.lastElementChild;
+                        tr.querySelector('.item-type').value = r.type || "";
+                        tr.querySelector('.item-name').value = r.itemName || "";
+                        tr.querySelector('.tech-list').value = r.tech || "";
+                        tr.querySelector('.start-date').value = r.start || "";
+                        tr.querySelector('.end-date').value = r.end || "";
+                        if (tr.querySelector('.units')) tr.querySelector('.units').value = r.units || "";
+                        tr.querySelector('.notes').value = r.notes || "";
+                        tr.querySelector('.status-select').value = r.status || "";
+                        calculateDurationForRow(tr);
+                        updateRowColor(tr);
+                    });
+                }
+            });
 
             recallMsg.textContent = 'تم استرجاع بيانات العميل: ' + code;
         } else {
