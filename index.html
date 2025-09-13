@@ -354,7 +354,7 @@ function saveAll() {
   };
 
   // **استبدل هذا الرابط برابط Web App الخاص بك من Google Apps Script**
-  const scriptURL = 'https://script.google.com/macros/s/AKfycbw391L0vbcpFn7GzRWammBLP_ygAH02SDLGD0KjJm8Z4z9m6krKYOUJTu4RcbSuab33uA/exec';
+  const scriptURL = 'https://script.google.com/macros/s/AKfycbzP3Bg8nG2ZQ78jT3pEwb9lfmeTnHQTbu4GOyc-nPArFxruHDCqiz-ogxTGclpZV1fa_w/exec';
 
   const formData = JSON.stringify(payload);
 
@@ -406,7 +406,7 @@ async function loadForClientCode(code) {
     recallMsg.textContent = 'جاري البحث عن البيانات...';
 
     // **استبدل هذا الرابط برابط Web App الخاص بك من Google Apps Script**
-    const scriptURL = 'https://script.google.com/macros/s/AKfycbw391L0vbcpFn7GzRWammBLP_ygAH02SDLGD0KjJm8Z4z9m6krKYOUJTu4RcbSuab33uA/exec';
+    const scriptURL = 'https://script.google.com/macros/s/AKfycbzP3Bg8nG2ZQ78jT3pEwb9lfmeTnHQTbu4GOyc-nPArFxruHDCqiz-ogxTGclpZV1fa_w/exec';
 
     try {
         const response = await fetch(`${scriptURL}?clientCode=${encodeURIComponent(code)}`);
@@ -560,3 +560,4 @@ refreshSavedCodesDropdown();
 
 </body>
 </html>
+
