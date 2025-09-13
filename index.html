@@ -21,6 +21,7 @@
   .btn-square{width:28px;height:28px;border-radius:4px;border:0;cursor:pointer;font-weight:bold;display:inline-flex;align-items:center;justify-content:center}
   .btn-add{background:#0b87ff;color:#fff}
   .btn-del{background:#e74c3c;color:#fff}
+  .search-btn{background:#0b6ed3;color:#fff;padding:0 12px; border-radius:4px; cursor:pointer;font-size:13px;}
 
   /* row colors light */
   tr.status-done{background:#e6f7ea}
@@ -37,7 +38,8 @@
   }
 
   .msg{font-size:13px;color:#0b6ed3;margin-left:8px}
-  .save-btn{padding:10px 16px;background:#0b6ed3;color:#fff;border:0;border-radius:6px;cursor:pointer}
+  .save-btn{padding:6px 12px;background:#0b6ed3;color:#fff;border:0;border-radius:6px;cursor:pointer;font-size:13px}
+  .top-buttons{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px;align-items:center}
 </style>
 </head>
 <body>
@@ -45,7 +47,10 @@
 
 <div class="top-row">
   <label>كود العميل
-    <input type="text" id="clientCode" placeholder="أدخل كود العميل (مفتاح)"/>
+    <div style="display:flex;gap:6px;align-items:center">
+      <input type="text" id="clientCode" placeholder="أدخل كود العميل (مفتاح)"/>
+      <button type="button" id="btnSearch" class="search-btn">بحث</button>
+    </div>
   </label>
 
   <label>اسم العميل
@@ -54,10 +59,6 @@
 
   <label>اسم المشروع
     <input type="text" id="projectName" placeholder="اسم المشروع"/>
-  </label>
-
-  <label>اسم الفني (قائمة)
-    <select id="mainTech" class="tech-select"></select>
   </label>
 
   <label>أضف فني جديد
@@ -70,6 +71,16 @@
   <div style="display:flex;align-items:center">
     <span id="recallMsg" class="msg" style="display:none"></span>
   </div>
+</div>
+
+<div class="top-buttons">
+  <button type="button" id="btnSave" class="save-btn">حفظ</button>
+  <button type="button" id="btnExportJSON" class="save-btn">تصدير JSON</button>
+  <button type="button" id="btnExportPDF" class="save-btn">تصدير PDF</button>
+  <select id="savedCodesDropdown" style="padding:6px;border-radius:4px;border:1px solid #ccc;">
+    <option value="">استرجاع كود محفوظ...</option>
+  </select>
+  <span id="saveMsg" class="msg" style="display:none"></span>
 </div>
 
 <form id="prodForm">
@@ -104,9 +115,9 @@
       <td>
         <select class="status-select">
           <option value="">---</option>
-          <option value="done">تم</option>
-          <option value="progress">تحت التشغيل</option>
-          <option value="error">متعطل / نقص خامة</option>
+          <option value="done">تم--✔️</option>
+          <option value="progress">تحت التشغيل--⏳</option>
+          <option value="error">متعطل / نقص خامة--❌</option>
         </select>
       </td>
     </tr>
@@ -151,13 +162,15 @@
   </template>
 
   <div id="stagesContainer"></div>
+</form>
 
-  <div style="text-align:center;margin-top:12px">
+<div style="text-align:center;margin-top:12px">
     <button type="button" id="btnSave" class="save-btn">حفظ</button>
     <span id="saveMsg" class="msg" style="display:none"></span>
   </div>
-</form>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
 <script>
 /* ======= Configuration (strict order as requested) ======= */
 const STAGES = [
@@ -172,14 +185,11 @@ const STAGES = [
   { id: "الجودة النهائية", basic: false }
 ];
 
-/* technicians list persisted */
 let technicians = JSON.parse(localStorage.getItem('motabaa_techs') || '["محمود","يوسف","عبد الستار","محمد ربيع"]');
 
-/* ===== helpers ===== */
 function byId(id){ return document.getElementById(id); }
 function create(tag, html){ const e = document.createElement(tag); if(html) e.innerHTML = html; return e; }
 
-/* create all stage tables in order */
 function renderStageTables(){
   const container = byId('stagesContainer');
   container.innerHTML = '';
@@ -191,22 +201,14 @@ function renderStageTables(){
       <thead>
         <tr><th colspan="${ stage.basic ? 9 : 9 }">${stage.id}</th></tr>
         <tr>
-          <th>نوع البند + إضافة</th>
-          <th>اسم البند + حذف</th>
+          <th>نوع البند</th>
+          <th>اسم البند</th>
           <th>اسم الفني</th>
           <th>بدء</th>
           <th>انتهاء</th>
           <th>مدة تشغيل</th>
           ${ stage.basic ? '<th colspan="2">ملاحظات</th>' : '<th>عدد الوحدات</th><th>ملاحظات</th>' }
           <th>الحالة</th>
-        </tr>
-        <tr class="sub-header">
-          <th colspan="3"></th>
-          <th>تاريخ/ساعة</th>
-          <th>تاريخ/ساعة</th>
-          <th>(ساعات)</th>
-          ${ stage.basic ? '<th colspan="2">ملاحظات إضافية</th>' : '<th>عدد</th><th>ملاحظات إضافية</th>' }
-          <th></th>
         </tr>
       </thead>
       <tbody></tbody>
@@ -216,9 +218,8 @@ function renderStageTables(){
   });
 }
 
-/* append an empty row to given stage table id */
 function appendEmptyRowTo(stageId){
-  const stage = STAGES.find(s => ('stage-' + s.id.replace(/\s+/g,'-').replace(/[^\w\-ء-ي]/g,'')) === stageId || s.id === stageId);
+  const stage = STAGES.find(s => ('stage-' + s.id.replace(/\s+/g,'-').replace(/[^\w\-ء-ي]/g,'') === stageId || s.id === stageId));
   if(!stage) return;
   const tpl = document.getElementById(stage.basic ? 'tpl-basic-row' : 'tpl-advanced-row');
   const clone = tpl.content.cloneNode(true);
@@ -229,18 +230,12 @@ function appendEmptyRowTo(stageId){
   setupRow(tr);
 }
 
-/* setup row listeners */
 function setupRow(tr){
   if(!tr) return;
-  // populate tech select
   const techSel = tr.querySelector('.tech-list');
   if(techSel) populateSingleTechSelect(techSel);
-
-  // add button (inline)
   const addBtn = tr.querySelector('.btn-add-inline');
   if(addBtn) addBtn.onclick = ()=> addRowAfter(tr);
-
-  // delete button
   const delBtn = tr.querySelector('.btn-del-inline');
   if(delBtn) delBtn.onclick = ()=> {
     const tbody = tr.parentNode;
@@ -249,18 +244,13 @@ function setupRow(tr){
       appendEmptyRowTo(tbody.parentNode.id);
     }
   };
-
-  // start/end change -> duration
   const start = tr.querySelector('.start-date');
   const end = tr.querySelector('.end-date');
   [start,end].forEach(inp => { if(inp) inp.onchange = ()=> calculateDurationForRow(tr); });
-
-  // status -> color
   const statusSel = tr.querySelector('.status-select');
   if(statusSel) statusSel.onchange = ()=> updateRowColor(tr);
 }
 
-/* populate single tech select element */
 function populateSingleTechSelect(sel){
   const cur = sel.value || "";
   sel.innerHTML = '<option value="">-- اختر فني --</option>';
@@ -270,19 +260,16 @@ function populateSingleTechSelect(sel){
   if(cur) sel.value = cur;
 }
 
-/* populate all tech selects incl top mainTech */
 function populateTechSelects(){
-  document.querySelectorAll('.tech-list, #mainTech').forEach(sel => {
+  document.querySelectorAll('.tech-list').forEach(sel => {
     const cur = sel.value || "";
     sel.innerHTML = '<option value="">-- اختر فني --</option>';
     technicians.forEach(t => { const o=document.createElement('option'); o.value=t; o.textContent=t; sel.appendChild(o); });
     if(cur) sel.value = cur;
   });
-  // persist techs
   localStorage.setItem('motabaa_techs', JSON.stringify(technicians));
 }
 
-/* add row after current tr */
 function addRowAfter(tr){
   const stageId = tr.closest('table').id;
   const stage = STAGES.find(s => 'stage-' + s.id.replace(/\s+/g,'-').replace(/[^\w\-ء-ي]/g,'') === stageId);
@@ -294,7 +281,6 @@ function addRowAfter(tr){
   setupRow(newTr);
 }
 
-/* calculate duration based on start/end and write to .duration and dataset */
 function calculateDurationForRow(tr){
   const s = tr.querySelector('.start-date')?.value;
   const e = tr.querySelector('.end-date')?.value;
@@ -305,35 +291,32 @@ function calculateDurationForRow(tr){
       const hours = (ed - sd) / 36e5;
       if(durEl) durEl.value = hours.toFixed(2);
       tr.dataset.duration = hours.toFixed(2);
-    } else {
-      if(durEl) durEl.value = "";
-      tr.dataset.duration = "";
-    }
-  } else {
-    if(durEl) durEl.value = "";
-    tr.dataset.duration = "";
-  }
+    } else { if(durEl) durEl.value = ""; tr.dataset.duration = ""; }
+  } else { if(durEl) durEl.value = ""; tr.dataset.duration = ""; }
   updateRowColor(tr);
 }
 
-/* update row color — default white if status empty or if row empty */
+function isRowEmpty(tr){
+  const name = (tr.querySelector('.item-name')?.value || "").trim();
+  const start = (tr.querySelector('.start-date')?.value || "").trim();
+  const end = (tr.querySelector('.end-date')?.value || "").trim();
+  const tech = (tr.querySelector('.tech-list')?.value || "").trim();
+  const notes = (tr.querySelector('.notes')?.value || "").trim();
+  const unitsEl = tr.querySelector('.units');
+  const units = unitsEl ? (unitsEl.value + "").trim() : "";
+  return (name === "" && start === "" && end === "" && tech === "" && notes === "" && units === "");
+}
+
 function updateRowColor(tr){
   tr.classList.remove('status-done','status-progress','status-error');
-  // if row empty -> keep white
-  if(isRowEmpty(tr)){
-    return;
-  }
+  if(isRowEmpty(tr)) return;
   const val = tr.querySelector('.status-select')?.value || "";
-  if(!val){
-    // if there is data but no status selected, remain white
-    return;
-  }
+  if(!val) return;
   if(val === 'done') tr.classList.add('status-done');
   else if(val === 'progress') tr.classList.add('status-progress');
   else if(val === 'error') tr.classList.add('status-error');
 }
 
-/* collect data of all stages */
 function collectAllData(){
   const out = {};
   STAGES.forEach(stage=>{
@@ -358,22 +341,7 @@ function collectAllData(){
   return out;
 }
 
-/*
-  New function: isRowEmpty (adjusted)
-  This function now only checks for a critical field ('item-name') to decide if a row should be saved.
-  This is to prevent the form from sending empty data to Google Sheets.
-*/
-function isRowEmpty(tr){
-  const name = (tr.querySelector('.item-name')?.value || "").trim();
-  // We check only the item name. If the user enters anything, the row will be saved.
-  return name === "";
-}
-
-
-/* ربط زر الحفظ مع الدالة */
-byId('btnSave').addEventListener('click', saveAll);
-
-// الكود الجديد الذي يرسل البيانات إلى Google Apps Script
+// **New function:** saveAll to send data to Google Apps Script
 function saveAll() {
   const clientCode = byId('clientCode').value.trim();
   if (!clientCode) {
@@ -385,7 +353,6 @@ function saveAll() {
     clientCode,
     clientName: byId('clientName').value.trim(),
     projectName: byId('projectName').value.trim(),
-    mainTech: byId('mainTech').value.trim(),
     stages: collectAllData(),
     technicians,
     savedAt: new Date().toISOString()
@@ -400,7 +367,7 @@ function saveAll() {
     alert("حدث خطأ في إعداد الصفحة. لا يمكن العثور على الإطار.");
     return;
   }
-  
+
   // Prepare a temporary form to send data
   const tempForm = document.createElement('form');
   tempForm.action = scriptURL;
@@ -415,7 +382,7 @@ function saveAll() {
   tempForm.appendChild(input);
 
   document.body.appendChild(tempForm);
-  
+
   // Show message and submit the form
   const msg = byId('saveMsg');
   msg.style.display = 'inline';
@@ -432,94 +399,133 @@ function saveAll() {
   document.body.removeChild(tempForm);
 }
 
-/* Load for client code (recall) — returns true if loaded */
 function loadForClientCode(code){
-  const key = 'motabaa_' + code;
-  const raw = localStorage.getItem(key);
-  const recallMsg = byId('recallMsg');
-  if(!raw){
-    recallMsg.style.display = 'inline';
-    recallMsg.textContent = 'كود جديد — جاهز لإدخال بيانات جديدة';
-    setTimeout(()=> recallMsg.style.display = 'none', 1600);
-    return false;
-  }
-  try{
-    const payload = JSON.parse(raw);
-    // top fields
-    byId('clientName').value = payload.clientName || '';
-    byId('projectName').value = payload.projectName || '';
-    if(Array.isArray(payload.technicians) && payload.technicians.length){
-      technicians = payload.technicians;
-    }
-    populateTechSelects();
-
-    // clear tables and rebuild rows using payload
-    STAGES.forEach(stage=>{
-      const tableId = 'stage-' + stage.id.replace(/\s+/g,'-').replace(/[^\w\-ء-ي]/g,'');
-      const tbody = document.querySelector('#' + tableId + ' tbody');
-      tbody.innerHTML = '';
-      const rows = (payload.stages && payload.stages[stage.id]) || [];
-      if(rows.length === 0){
-        appendEmptyRowTo(tableId);
-      } else {
-        rows.forEach(r => {
-          const tpl = document.getElementById(stage.basic ? 'tpl-basic-row' : 'tpl-advanced-row');
-          const clone = tpl.content.cloneNode(true);
-          const tr = clone.querySelector('tr');
-          tr.dataset.stage = stage.id;
-          // fill values
-          if(tr.querySelector('.item-type')) tr.querySelector('.item-type').value = r.type || "";
-          if(tr.querySelector('.item-name')) tr.querySelector('.item-name').value = r.itemName || "";
-          if(tr.querySelector('.tech-list')){
-            populateSingleTechSelect(tr.querySelector('.tech-list'));
-            tr.querySelector('.tech-list').value = r.tech || "";
-          }
-          if(tr.querySelector('.start-date')) tr.querySelector('.start-date').value = r.start || "";
-          if(tr.querySelector('.end-date')) tr.querySelector('.end-date').value = r.end || "";
-          if(r.duration) { tr.dataset.duration = r.duration; if(tr.querySelector('.duration')) tr.querySelector('.duration').value = r.duration; }
-          if(tr.querySelector('.units')) tr.querySelector('.units').value = r.units || "";
-          if(tr.querySelector('.notes')) tr.querySelector('.notes').value = r.notes || "";
-          if(tr.querySelector('.status-select')) tr.querySelector('.status-select').value = r.status || "";
-          tbody.appendChild(tr);
-          setupRow(tr);
-          updateRowColor(tr);
-        });
-      }
+  const data = JSON.parse(localStorage.getItem('motabaa_' + code) || 'null');
+  if(!data) return alert('لا توجد بيانات محفوظة لهذا الكود');
+  byId('clientName').value = data.clientName || '';
+  byId('projectName').value = data.projectName || '';
+  technicians = data.technicians || technicians;
+  populateTechSelects();
+  renderStageTables();
+  STAGES.forEach(stage=>{
+    const tableId = 'stage-' + stage.id.replace(/\s+/g,'-').replace(/[^\w\-ء-ي]/g,'');
+    const tbody = document.querySelector('#' + tableId + ' tbody');
+    tbody.innerHTML = '';
+    (data.stages[stage.id] || []).forEach(row=>{
+      appendEmptyRowTo(tableId);
+      const tr = tbody.lastElementChild;
+      tr.querySelector('.item-type').value = row.type || "";
+      tr.querySelector('.item-name').value = row.itemName || "";
+      tr.querySelector('.tech-list').value = row.tech || "";
+      tr.querySelector('.start-date').value = row.start || "";
+      tr.querySelector('.end-date').value = row.end || "";
+      if(tr.querySelector('.units')) tr.querySelector('.units').value = row.units || "";
+      tr.querySelector('.notes').value = row.notes || "";
+      tr.querySelector('.status-select').value = row.status || "";
+      calculateDurationForRow(tr);
+      updateRowColor(tr);
     });
-
-    recallMsg.style.display = 'inline';
-    recallMsg.textContent = 'تم استرجاع بيانات الكود: ' + code;
-    setTimeout(()=> recallMsg.style.display = 'none', 1600);
-    return true;
-  } catch(err){
-    console.error('load error', err);
-    return false;
-  }
+    if(tbody.querySelectorAll('tr').length === 0) appendEmptyRowTo(tableId);
+  });
 }
 
-/* clientCode change handler -> recall */
-byId('clientCode').addEventListener('change', e=>{
-  const code = e.target.value.trim();
+function refreshSavedCodesDropdown(){
+  const dropdown = byId('savedCodesDropdown');
+  const keys = Object.keys(localStorage).filter(k=>k.startsWith('motabaa_') && k !== 'motabaa_techs');
+  dropdown.innerHTML = '<option value="">استرجاع كود محفوظ...</option>';
+  keys.forEach(k=>{
+    const opt = document.createElement('option');
+    opt.value = k.replace('motabaa_','');
+    opt.textContent = k.replace('motabaa_','');
+    dropdown.appendChild(opt);
+  });
+}
+
+/* Export JSON */
+byId('btnExportJSON').addEventListener('click', ()=>{
+  const data = collectAllData();
+  const blob = new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = (byId('clientCode').value.trim() || 'export') + '.json';
+  a.click();
+  URL.revokeObjectURL(url);
+});
+
+/* Export PDF */
+byId('btnExportPDF').addEventListener('click', ()=>{
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation: 'l', unit: 'pt', format: 'a4' });
+  let y = 20;
+  const clientInfo = `كود العميل: ${byId('clientCode').value || ''} | اسم العميل: ${byId('clientName').value || ''} | المشروع: ${byId('projectName').value || ''}`;
+  doc.setFontSize(12);
+  doc.text(clientInfo, 40, y);
+  y += 20;
+  STAGES.forEach(stage=>{
+    const tableId = 'stage-' + stage.id.replace(/\s+/g,'-').replace(/[^\w\-ء-ي]/g,'');
+    const rows = [];
+    document.querySelectorAll('#' + tableId + ' tbody tr').forEach(tr=>{
+      if(isRowEmpty(tr)) return;
+      const arr = [
+        tr.querySelector('.item-type')?.value || "",
+        tr.querySelector('.item-name')?.value || "",
+        tr.querySelector('.tech-list')?.value || "",
+        tr.querySelector('.start-date')?.value || "",
+        tr.querySelector('.end-date')?.value || "",
+        tr.dataset.duration || "",
+      ];
+      if(stage.basic){
+        arr.push(tr.querySelector('.notes')?.value || "");
+      } else {
+        arr.push(tr.querySelector('.units')?.value || "", tr.querySelector('.notes')?.value || "");
+      }
+      arr.push(tr.querySelector('.status-select')?.value || "");
+      rows.push(arr);
+    });
+    if(rows.length){
+      doc.setFontSize(14);
+      doc.text(stage.id, 40, y);
+      y += 18;
+      const headers = stage.basic ? ['نوع','اسم','فني','بدء','انتهاء','مدة','ملاحظات','الحالة'] : ['نوع','اسم','فني','بدء','انتهاء','مدة','عدد','ملاحظات','الحالة'];
+      doc.autoTable({ head:[headers], body: rows, startY:y, styles:{fontSize:9}, margin:{left:40,right:40} });
+      y = doc.lastAutoTable.finalY + 10;
+    }
+  });
+  doc.save((byId('clientCode').value.trim() || 'export') + '.pdf');
+});
+
+/* Events */
+byId('btnSave').onclick = saveAll;
+byId('btnAddTech').onclick = ()=>{
+  const newTech = byId('newTech').value.trim();
+  if(!newTech) return alert('اكتب اسم الفني لإضافته');
+  if(!technicians.includes(newTech)) technicians.push(newTech);
+  byId('newTech').value = '';
+  populateTechSelects();
+};
+
+byId('btnSearch').onclick = ()=>{
+  const code = byId('clientCode').value.trim();
+  if(!code) return alert('اكتب كود العميل للبحث');
+  loadForClientCode(code);
+};
+
+byId('savedCodesDropdown').addEventListener('change', e=>{
+  const code = e.target.value;
   if(!code) return;
+  byId('clientCode').value = code;
   loadForClientCode(code);
 });
 
-/* add technician button */
-byId('btnAddTech').addEventListener('click', ()=> {
-  const v = byId('newTech').value.trim();
-  if(!v) return alert('اكتب اسم الفني ثم اضغط +');
-  if(!technicians.includes(v)) technicians.push(v);
-  byId('newTech').value = '';
-  populateTechSelects();
+/* init */
+renderStageTables();
+STAGES.forEach(stage=>{
+  const tableId = 'stage-' + stage.id.replace(/\s+/g,'-').replace(/[^\w\-ء-ي]/g,'');
+  appendEmptyRowTo(tableId);
 });
-
-/* تهيئة الصفحة عند التحميل */
-function init(){
-  renderStageTables();
-  STAGES.forEach(s => appendEmptyRowTo('stage-' + s.id.replace(/\s+/g,'-').replace(/[^\w\-ء-ي]/g,'')));
-  populateTechSelects();
-}
-window.addEventListener('load', init);
+populateTechSelects();
+refreshSavedCodesDropdown();
 </script>
 
 <iframe id="g-script-iframe" style="display:none;"></iframe>
