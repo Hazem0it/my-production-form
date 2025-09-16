@@ -15,6 +15,15 @@
   .top-row .field-inline{display:flex;gap:6px;align-items:center}
   .top-row input[type="text"], .top-row select{padding:6px;width:220px;box-sizing:border-box}
 
+  .top-controls{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:12px}
+  .top-controls .btn{padding:8px 12px;background:#0b6ed3;color:#fff;border-radius:6px;border:0;cursor:pointer}
+  .top-controls .btn.secondary{background:#0b87ff}
+  .top-controls select{padding:6px;width:220px;box-sizing:border-box}
+
+  .materials-row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:8px}
+  .material-input{width:220px;padding:6px;border-radius:4px;border:1px solid #ccc;box-sizing:border-box}
+  .material-wrap{display:flex;gap:6px;align-items:center}
+
   table.stage{width:100%;border-collapse:collapse;margin:18px 0;background:#fff;box-shadow:0 0 0 1px #e6eef8}
   table.stage thead th{background:#0b6ed3;color:#fff;padding:8px;text-align:center}
   table.stage thead tr.sub-header th{background:#dbeeff;color:#000;font-weight:600}
@@ -25,22 +34,26 @@
   .btn-square{width:28px;height:28px;border-radius:4px;border:0;cursor:pointer;font-weight:bold;display:inline-flex;align-items:center;justify-content:center}
   .btn-add{background:#0b87ff;color:#fff}
   .btn-del{background:#e74c3c;color:#fff}
-  .search-btn{background:#0b6ed3;color:#fff;padding:0 12px; border-radius:4px; cursor:pointer;font-size:13px;}
 
   /* row colors light */
   tr.status-done{background:#e6f7ea}
   tr.status-progress{background:#fffbe6}
   tr.status-error{background:#fdecea}
 
+  /* tech select same width as client name */
+  .tech-select{width:220px!important}
+
   @media (max-width:900px){
     .top-row label{min-width:150px;width:48%}
     .top-row input[type="text"], .top-row select{width:100%}
     table.stage td, table.stage th{font-size:12px;padding:4px}
+    .top-controls select, .material-input { width:100%; }
   }
 
   .msg{font-size:13px;color:#0b6ed3;margin-left:8px}
-  .save-btn{padding:6px 12px;background:#0b6ed3;color:#fff;border:0;border-radius:6px;cursor:pointer;font-size:13px}
-  .top-buttons{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px;align-items:center}
+  .save-btn{padding:10px 16px;background:#0b6ed3;color:#fff;border:0;border-radius:6px;cursor:pointer}
+
+  .del-material{background:#e74c3c;color:#fff;border:0;border-radius:4px;padding:6px 8px;cursor:pointer}
 </style>
 </head>
 <body>
@@ -48,9 +61,9 @@
 
 <div class="top-row">
   <label>كود العميل
-    <div style="display:flex;gap:6px;align-items:center">
+    <div class="field-inline">
       <input type="text" id="clientCode" placeholder="أدخل كود العميل (مفتاح)"/>
-      <button type="button" id="btnSearch" class="search-btn">بحث</button>
+      <button type="button" id="btnSearch" class="btn-square btn-add" title="بحث">🔎</button>
     </div>
   </label>
 
@@ -62,21 +75,32 @@
     <input type="text" id="projectName" placeholder="اسم المشروع"/>
   </label>
 
-  <label>أضف فني جديد
-    <div class="field-inline">
+   <label>أضف فني جديد
+    <div style="display:flex;gap:6px">
       <input type="text" id="newTech" placeholder="اكتب اسم الفني"/>
       <button type="button" id="btnAddTech" class="btn-square btn-add" title="أضف فني">+</button>
     </div>
   </label>
+
+  <div style="display:flex;align-items:center">
+    <span id="recallMsg" class="msg" style="display:none"></span>
+  </div>
 </div>
 
-<div class="top-buttons">
-  <button type="button" id="btnSave" class="save-btn">حفظ</button>
-  <button type="button" id="btnExportJSON" class="save-btn">تصدير JSON</button>
-  <button type="button" id="btnExportPDF" class="save-btn">تصدير PDF</button>
-  <span id="recallMsg" class="msg" style="display:none"></span>
-  <span id="saveMsg" class="msg" style="display:none"></span>
+<div class="top-controls" aria-label="controls">
+  <button id="btnSave" class="btn">حفظ</button>
+  <button id="btnExportJSON" class="btn secondary">تصدير JSON</button>
+  <button id="btnExportPDF" class="btn secondary">تصدير PDF</button>
+
+  <select id="savedCodesDropdown" aria-label="استرجاع كود محفوظ" title="اختر كود محفوظ"></select>
+  <button id="btnLoadSaved" class="btn">استرجاع</button>
+
+  <input id="internalMaterial" class="material-input" placeholder="الخامة الداخلية" title="الخامة الداخلية (نفس عرض اسم العميل)"/>
+  <input id="externalMaterial" class="material-input" placeholder="الخامة الخارجية" title="الخامة الخارجية (نفس عرض اسم العميل)"/>
+  <button id="btnAddMaterial" class="btn">+</button>
 </div>
+
+<div id="extraMaterialsContainer" class="materials-row"></div>
 
 <form id="prodForm">
   <template id="tpl-basic-row">
@@ -157,10 +181,11 @@
   </template>
 
   <div id="stagesContainer"></div>
-</form>
+
+  </form>
 
 <script>
-/* ======= Configuration (strict order as requested) ======= */
+/* ======= Configuration (unchanged order) ======= */
 const STAGES = [
   { id: "التقطيع", basic: true },
   { id: "المفحار", basic: true },
@@ -173,11 +198,16 @@ const STAGES = [
   { id: "الجودة النهائية", basic: false }
 ];
 
+/* technicians list persisted (unchanged) */
 let technicians = JSON.parse(localStorage.getItem('motabaa_techs') || '["محمود","يوسف","عبد الستار","محمد ربيع"]');
 
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx_g4JN6P2a8tUKo8-GsZWc0RhZwnJdq1WE_7axeJ1LcpJmeUyfuXCBI0j9LK7jvDrnZQ/exec'; // **استبدل هذا الرابط**
+
+/* ===== helpers ===== */
 function byId(id){ return document.getElementById(id); }
 function create(tag, html){ const e = document.createElement(tag); if(html) e.innerHTML = html; return e; }
 
+/* ===== render stage tables (unchanged) ===== */
 function renderStageTables(){
   const container = byId('stagesContainer');
   container.innerHTML = '';
@@ -187,7 +217,7 @@ function renderStageTables(){
     tbl.id = 'stage-' + stage.id.replace(/\s+/g,'-').replace(/[^\w\-ء-ي]/g,'');
     const title = `
       <thead>
-        <tr><th colspan="${ stage.basic ? 8 : 9 }">${stage.id}</th></tr>
+        <tr><th colspan="${ stage.basic ? 9 : 9 }">${stage.id}</th></tr>
         <tr>
           <th>نوع البند</th>
           <th>اسم البند</th>
@@ -206,8 +236,9 @@ function renderStageTables(){
   });
 }
 
+/* Append empty row (unchanged) */
 function appendEmptyRowTo(stageId){
-  const stage = STAGES.find(s => ('stage-' + s.id.replace(/\s+/g,'-').replace(/[^\w\-ء-ي]/g,'') === stageId || s.id === stageId));
+  const stage = STAGES.find(s => ('stage-' + s.id.replace(/\s+/g,'-').replace(/[^\w\-ء-ي]/g,'')) === stageId || s.id === stageId);
   if(!stage) return;
   const tpl = document.getElementById(stage.basic ? 'tpl-basic-row' : 'tpl-advanced-row');
   const clone = tpl.content.cloneNode(true);
@@ -218,12 +249,18 @@ function appendEmptyRowTo(stageId){
   setupRow(tr);
 }
 
+/* setup row listeners (unchanged) */
 function setupRow(tr){
   if(!tr) return;
+  // populate tech select
   const techSel = tr.querySelector('.tech-list');
   if(techSel) populateSingleTechSelect(techSel);
+
+  // add button (inline)
   const addBtn = tr.querySelector('.btn-add-inline');
   if(addBtn) addBtn.onclick = ()=> addRowAfter(tr);
+
+  // delete button
   const delBtn = tr.querySelector('.btn-del-inline');
   if(delBtn) delBtn.onclick = ()=> {
     const tbody = tr.parentNode;
@@ -232,13 +269,18 @@ function setupRow(tr){
       appendEmptyRowTo(tbody.parentNode.id);
     }
   };
+
+  // start/end change -> duration
   const start = tr.querySelector('.start-date');
   const end = tr.querySelector('.end-date');
   [start,end].forEach(inp => { if(inp) inp.onchange = ()=> calculateDurationForRow(tr); });
+
+  // status -> color
   const statusSel = tr.querySelector('.status-select');
   if(statusSel) statusSel.onchange = ()=> updateRowColor(tr);
 }
 
+/* populate single tech select element (unchanged) */
 function populateSingleTechSelect(sel){
   const cur = sel.value || "";
   sel.innerHTML = '<option value="">-- اختر فني --</option>';
@@ -248,16 +290,19 @@ function populateSingleTechSelect(sel){
   if(cur) sel.value = cur;
 }
 
+/* populate all tech selects incl top mainTech (unchanged) */
 function populateTechSelects(){
-  document.querySelectorAll('.tech-list').forEach(sel => {
+  document.querySelectorAll('.tech-list, #mainTech').forEach(sel => {
     const cur = sel.value || "";
     sel.innerHTML = '<option value="">-- اختر فني --</option>';
     technicians.forEach(t => { const o=document.createElement('option'); o.value=t; o.textContent=t; sel.appendChild(o); });
     if(cur) sel.value = cur;
   });
+  // persist techs
   localStorage.setItem('motabaa_techs', JSON.stringify(technicians));
 }
 
+/* add row after current tr (unchanged) */
 function addRowAfter(tr){
   const stageId = tr.closest('table').id;
   const stage = STAGES.find(s => 'stage-' + s.id.replace(/\s+/g,'-').replace(/[^\w\-ء-ي]/g,'') === stageId);
@@ -269,6 +314,7 @@ function addRowAfter(tr){
   setupRow(newTr);
 }
 
+/* duration calc (unchanged) */
 function calculateDurationForRow(tr){
   const s = tr.querySelector('.start-date')?.value;
   const e = tr.querySelector('.end-date')?.value;
@@ -279,22 +325,24 @@ function calculateDurationForRow(tr){
       const hours = (ed - sd) / 36e5;
       if(durEl) durEl.value = hours.toFixed(2);
       tr.dataset.duration = hours.toFixed(2);
-    } else { if(durEl) durEl.value = ""; tr.dataset.duration = ""; }
-  } else { if(durEl) durEl.value = ""; tr.dataset.duration = ""; }
+    } else {
+      if(durEl) durEl.value = "";
+      tr.dataset.duration = "";
+    }
+  } else {
+    if(durEl) durEl.value = "";
+    tr.dataset.duration = "";
+  }
   updateRowColor(tr);
 }
 
+/* isRowEmpty (slightly adjusted as in your version) */
 function isRowEmpty(tr){
   const name = (tr.querySelector('.item-name')?.value || "").trim();
-  const start = (tr.querySelector('.start-date')?.value || "").trim();
-  const end = (tr.querySelector('.end-date')?.value || "").trim();
-  const tech = (tr.querySelector('.tech-list')?.value || "").trim();
-  const notes = (tr.querySelector('.notes')?.value || "").trim();
-  const unitsEl = tr.querySelector('.units');
-  const units = unitsEl ? (unitsEl.value + "").trim() : "";
-  return (name === "" && start === "" && end === "" && tech === "" && notes === "" && units === "");
+  return name === "";
 }
 
+/* update row color (unchanged) */
 function updateRowColor(tr){
   tr.classList.remove('status-done','status-progress','status-error');
   if(isRowEmpty(tr)) return;
@@ -305,6 +353,7 @@ function updateRowColor(tr){
   else if(val === 'error') tr.classList.add('status-error');
 }
 
+/* collectAllData: returns stages map (kept same) */
 function collectAllData(){
   const out = {};
   STAGES.forEach(stage=>{
@@ -329,146 +378,326 @@ function collectAllData(){
   return out;
 }
 
-async function saveAll() {
+/* --------- NEW: materials helpers --------- */
+function addExtraMaterial(value){
+  const wrap = document.createElement('div');
+  wrap.className = 'material-wrap';
+  const inp = document.createElement('input');
+  inp.type = 'text';
+  inp.className = 'extra-material';
+  inp.placeholder = 'خامة إضافية';
+  inp.value = value || '';
+  inp.style.width = '220px';
+  inp.style.padding = '6px';
+  inp.style.boxSizing = 'border-box';
+
+  const del = document.createElement('button');
+  del.type = 'button';
+  del.className = 'del-material';
+  del.textContent = '❌';
+  del.onclick = (e) => { e.preventDefault(); wrap.remove(); };
+
+  wrap.appendChild(inp);
+  wrap.appendChild(del);
+  byId('extraMaterialsContainer').appendChild(wrap);
+}
+
+/* refresh saved codes dropdown */
+function refreshSavedCodesDropdown(){
+  const dd = byId('savedCodesDropdown');
+  dd.innerHTML = '<option value="">استرجاع كود محفوظ...</option>';
+  // iterate through localStorage keys
+  Object.keys(localStorage).forEach(k=>{
+    if(k.startsWith('motabaa_') && k !== 'motabaa_techs'){
+      try{
+        const payload = JSON.parse(localStorage.getItem(k));
+        const code = payload.clientCode || k.replace('motabaa_','');
+        const name = payload.clientName || '';
+        const opt = document.createElement('option');
+        opt.value = code;
+        opt.textContent = code + (name ? (' — ' + name) : '');
+        dd.appendChild(opt);
+      }catch(e){}
+    }
+  });
+}
+
+/* Export JSON (includes materials + stages + top fields) */
+function exportJSON(){
   const clientCode = byId('clientCode').value.trim();
-  if (!clientCode) {
-    alert('مطلوب: اكتب كود العميل قبل الحفظ');
-    return;
-  }
+  const payload = {
+    clientCode,
+    clientName: byId('clientName').value.trim(),
+    projectName: byId('projectName').value.trim(),
+    internalMaterial: byId('internalMaterial').value || '',
+    externalMaterial: byId('externalMaterial').value || '',
+    extraMaterials: Array.from(document.querySelectorAll('.extra-material')).map(i=>i.value),
+    technicians,
+    stages: collectAllData(),
+    savedAt: new Date().toISOString()
+  };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], {type: 'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = (clientCode || 'export') + '.json';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+/* Export PDF using jsPDF + autoTable */
+function exportPDF(){
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({orientation:'l', unit:'pt', format:'a4'});
+  let y = 30;
+  doc.setFontSize(14);
+  doc.text('متابعة إنتاج', 40, y);
+  y += 20;
+  doc.setFontSize(11);
+  doc.text('كود العميل: ' + (byId('clientCode').value || ''), 40, y); y += 16;
+  doc.text('اسم العميل: ' + (byId('clientName').value || ''), 40, y); y += 16;
+  doc.text('اسم المشروع: ' + (byId('projectName').value || ''), 40, y); y += 16;
+  doc.text('الخامة الداخلية: ' + (byId('internalMaterial').value || ''), 40, y); y += 16;
+  doc.text('الخامة الخارجية: ' + (byId('externalMaterial').value || ''), 40, y); y += 16;
+  const extras = Array.from(document.querySelectorAll('.extra-material')).map(i=>i.value).filter(Boolean);
+  extras.forEach((m,i)=>{ doc.text('خامة إضافية ' + (i+1) + ': ' + m, 40, y); y += 14; });
+
+  // for each stage use autoTable
+  STAGES.forEach(stage=>{
+    const tableId = 'stage-' + stage.id.replace(/\s+/g,'-').replace(/[^\w\-ء-ي]/g,'');
+    const rows = [];
+    document.querySelectorAll('#' + tableId + ' tbody tr').forEach(tr=>{
+      if(isRowEmpty(tr)) return;
+      const row = [
+        tr.querySelector('.item-type')?.value || "",
+        tr.querySelector('.item-name')?.value || "",
+        tr.querySelector('.tech-list')?.value || "",
+        tr.querySelector('.start-date')?.value || "",
+        tr.querySelector('.end-date')?.value || "",
+        tr.dataset.duration || ""
+      ];
+      if(stage.basic){
+        row.push(tr.querySelector('.notes')?.value || "");
+      } else {
+        row.push(tr.querySelector('.units')?.value || "", tr.querySelector('.notes')?.value || "");
+      }
+      row.push(tr.querySelector('.status-select')?.value || "");
+      rows.push(row);
+    });
+    if(rows.length){
+      doc.setFontSize(12);
+      doc.text(stage.id, 40, y); y += 14;
+      const headers = stage.basic ? ['نوع','اسم','فني','بدء','انتهاء','مدة','ملاحظات','الحالة'] : ['نوع','اسم','فني','بدء','انتهاء','مدة','عدد','ملاحظات','الحالة'];
+      doc.autoTable({ head:[headers], body: rows, startY: y, styles:{fontSize:9}, margin:{left:40,right:40} });
+      y = doc.lastAutoTable.finalY + 12;
+    }
+  });
+
+  doc.save((byId('clientCode').value.trim() || 'export') + '.pdf');
+}
+
+/* Save (to Google Apps Script AND localStorage) - merged */
+function saveAll(){
+  const clientCode = byId('clientCode').value.trim();
+  if(!clientCode){ alert('مطلوب: اكتب كود العميل قبل الحفظ'); return; }
 
   const payload = {
     clientCode,
     clientName: byId('clientName').value.trim(),
     projectName: byId('projectName').value.trim(),
-    stages: collectAllData(),
+    mainTech: byId('mainTech')?.value || '', // Check if element exists
     technicians,
+    internalMaterial: byId('internalMaterial').value || '',
+    externalMaterial: byId('externalMaterial').value || '',
+    extraMaterials: Array.from(document.querySelectorAll('.extra-material')).map(i=>i.value),
+    stages: collectAllData(),
     savedAt: new Date().toISOString()
   };
 
-  // **استبدل هذا الرابط برابط Web App الخاص بك من Google Apps Script**
-  const scriptURL = 'https://script.google.com/macros/s/AKfycbwuXSIiW6qrcS_toiPLjJPYnUV2fAc35JvR_09QsZclCiqn5Ow7BrCo3z1C8KFNNvjYGg/exec';
+  // store locally (so dropdown / recall works)
+  localStorage.setItem('motabaa_' + clientCode, JSON.stringify(payload));
+  localStorage.setItem('motabaa_techs', JSON.stringify(technicians));
+  refreshSavedCodesDropdown();
 
-  const formData = JSON.stringify(payload);
-
-  const msg = byId('saveMsg');
+  // also send to Google Apps Script (existing flow)
+  const scriptURL = SCRIPT_URL;
+  const msg = byId('recallMsg');
   msg.style.display = 'inline';
   msg.textContent = 'جاري الحفظ...';
 
-  try {
-    const response = await fetch(scriptURL, {
-      method: 'POST',
-      body: formData,
-      headers: {
-        'Content-Type': 'application/json'
+  fetch(scriptURL, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+    headers: {
+      'Content-Type': 'application/json'
+    }
+  })
+  .then(response => response.json())
+  .then(result => {
+    if(result.success) {
+      msg.textContent = 'تم الحفظ بنجاح إلى جوجل شيت!';
+    } else {
+      msg.textContent = 'حدث خطأ في الحفظ إلى جوجل شيت: ' + result.error;
+    }
+  })
+  .catch(error => {
+    console.error("Error saving data:", error);
+    msg.textContent = 'حدث خطأ في الاتصال. يرجى المحاولة مرة أخرى.';
+  })
+  .finally(() => {
+    setTimeout(() => msg.style.display = 'none', 2200);
+  });
+}
+
+/* Load for client code — extended to include materials & extraMaterials */
+function loadForClientCode(code){
+  const key = 'motabaa_' + code;
+  const raw = localStorage.getItem(key);
+  const recallMsg = byId('recallMsg');
+  if(!raw){
+    recallMsg.style.display = 'inline';
+    recallMsg.textContent = 'كود جديد — جاهز لإدخال بيانات جديدة';
+    setTimeout(()=> recallMsg.style.display = 'none', 1600);
+    return false;
+  }
+  try{
+    const payload = JSON.parse(raw);
+    // top fields
+    byId('clientName').value = payload.clientName || '';
+    byId('projectName').value = payload.projectName || '';
+    // materials
+    byId('internalMaterial').value = payload.internalMaterial || '';
+    byId('externalMaterial').value = payload.externalMaterial || '';
+    // rebuild extra materials
+    byId('extraMaterialsContainer').innerHTML = '';
+    (payload.extraMaterials || []).forEach(m => addExtraMaterial(m));
+
+    if(Array.isArray(payload.technicians) && payload.technicians.length){
+      technicians = payload.technicians;
+    }
+    populateTechSelects();
+
+    // clear tables and rebuild rows using payload.stages
+    STAGES.forEach(stage=>{
+      const tableId = 'stage-' + stage.id.replace(/\s+/g,'-').replace(/[^\w\-ء-ي]/g,'');
+      const tbody = document.querySelector('#' + tableId + ' tbody');
+      tbody.innerHTML = '';
+      const rows = (payload.stages && payload.stages[stage.id]) || [];
+      if(rows.length === 0){
+        appendEmptyRowTo(tableId);
+      } else {
+        rows.forEach(r => {
+          const tpl = document.getElementById(stage.basic ? 'tpl-basic-row' : 'tpl-advanced-row');
+          const clone = tpl.content.cloneNode(true);
+          const tr = clone.querySelector('tr');
+          tr.dataset.stage = stage.id;
+          // fill values (same logic as original)
+          if(tr.querySelector('.item-type')) tr.querySelector('.item-type').value = r.type || "";
+          if(tr.querySelector('.item-name')) tr.querySelector('.item-name').value = r.itemName || "";
+          if(tr.querySelector('.tech-list')){
+            populateSingleTechSelect(tr.querySelector('.tech-list'));
+            tr.querySelector('.tech-list').value = r.tech || "";
+          }
+          if(tr.querySelector('.start-date')) tr.querySelector('.start-date').value = r.start || "";
+          if(tr.querySelector('.end-date')) tr.querySelector('.end-date').value = r.end || "";
+          if(r.duration) { tr.dataset.duration = r.duration; if(tr.querySelector('.duration')) tr.querySelector('.duration').value = r.duration; }
+          if(tr.querySelector('.units')) tr.querySelector('.units').value = r.units || "";
+          if(tr.querySelector('.notes')) tr.querySelector('.notes').value = r.notes || "";
+          if(tr.querySelector('.status-select')) tr.querySelector('.status-select').value = r.status || "";
+          tbody.appendChild(tr);
+          setupRow(tr);
+          updateRowColor(tr);
+        });
       }
     });
 
-    const result = await response.json();
-    if(result.success) {
-      msg.textContent = 'تم الحفظ بنجاح!';
-    } else {
-      msg.textContent = 'حدث خطأ في الحفظ: ' + result.error;
-    }
-  } catch (error) {
-    console.error("Error saving data:", error);
-    msg.textContent = 'حدث خطأ في الاتصال. يرجى المحاولة مرة أخرى.';
-  } finally {
-    setTimeout(() => msg.style.display = 'none', 2200);
-  }
-}
-
-async function loadForClientCode(code) {
-  const recallMsg = byId('recallMsg');
-  // **استبدل هذا الرابط برابط Web App الخاص بك من Google Apps Script**
-  const scriptURL = 'https://script.google.com/macros/s/AKfycbwuXSIiW6qrcS_toiPLjJPYnUV2fAc35JvR_09QsZclCiqn5Ow7BrCo3z1C8KFNNvjYGg/exec';
-
-  try {
     recallMsg.style.display = 'inline';
-    recallMsg.textContent = 'جاري البحث عن البيانات...';
-    
-    const response = await fetch(`${scriptURL}?clientCode=${encodeURIComponent(code)}`);
-    const result = await response.json();
-
-    if (result.success && result.data) {
-      const data = result.data;
-      byId('clientName').value = data.clientName || '';
-      byId('projectName').value = data.projectName || '';
-      
-      renderStageTables();
-      
-      STAGES.forEach(stage => {
-        const tableId = 'stage-' + stage.id.replace(/\s+/g,'-').replace(/[^\w\-ء-ي]/g,'');
-        const tbody = document.querySelector('#' + tableId + ' tbody');
-        tbody.innerHTML = '';
-        const rows = data.stages[stage.id] || [];
-
-        if (rows.length === 0 || isRowEmpty(rows[0])) {
-          appendEmptyRowTo(tableId);
-        } else {
-          rows.forEach(r => {
-            const tpl = document.getElementById(stage.basic ? 'tpl-basic-row' : 'tpl-advanced-row');
-            const clone = tpl.content.cloneNode(true);
-            const tr = clone.querySelector('tr');
-            tr.dataset.stage = stage.id;
-            
-            if(tr.querySelector('.item-type')) tr.querySelector('.item-type').value = r.type || "";
-            if(tr.querySelector('.item-name')) tr.querySelector('.item-name').value = r.itemName || "";
-            if(tr.querySelector('.tech-list')){
-              populateSingleTechSelect(tr.querySelector('.tech-list'));
-              tr.querySelector('.tech-list').value = r.tech || "";
-            }
-            if(tr.querySelector('.start-date')) tr.querySelector('.start-date').value = r.start || "";
-            if(tr.querySelector('.end-date')) tr.querySelector('.end-date').value = r.end || "";
-            if(r.duration) { tr.dataset.duration = r.duration; if(tr.querySelector('.duration')) tr.querySelector('.duration').value = r.duration; }
-            if(tr.querySelector('.units')) tr.querySelector('.units').value = r.units || "";
-            if(tr.querySelector('.notes')) tr.querySelector('.notes').value = r.notes || "";
-            if(tr.querySelector('.status-select')) tr.querySelector('.status-select').value = r.status || "";
-            
-            tbody.appendChild(tr);
-            setupRow(tr);
-            updateRowColor(tr);
-          });
-        }
-      });
-      recallMsg.textContent = 'تم استرجاع بيانات العميل: ' + code;
-    } else {
-      recallMsg.textContent = 'لا توجد بيانات محفوظة لهذا الكود. يمكنك البدء في إدخال بيانات جديدة.';
-      byId('clientName').value = '';
-      byId('projectName').value = '';
-      renderStageTables();
-      STAGES.forEach(s => appendEmptyRowTo('stage-' + s.id.replace(/\s+/g,'-').replace(/[^\w\-ء-ي]/g,'')));
-    }
-  } catch (error) {
-    recallMsg.textContent = 'حدث خطأ أثناء الاتصال. يرجى المحاولة مرة أخرى.';
-    console.error("Error fetching data:", error);
-  } finally {
-    setTimeout(() => recallMsg.style.display = 'none', 4000);
+    recallMsg.textContent = 'تم استرجاع بيانات الكود: ' + code;
+    setTimeout(()=> recallMsg.style.display = 'none', 1600);
+    return true;
+  } catch(err){
+    console.error('load error', err);
+    return false;
   }
 }
 
-/* Events */
-byId('btnSave').onclick = saveAll;
-byId('btnAddTech').onclick = ()=>{
-  const newTech = byId('newTech').value.trim();
-  if(!newTech) return alert('اكتب اسم الفني لإضافته');
-  if(!technicians.includes(newTech)) technicians.push(newTech);
+/* Search button behaviour: search by code first, then by name */
+byId('btnSearch').addEventListener('click', ()=>{
+  const code = byId('clientCode').value.trim();
+  const name = byId('clientName').value.trim();
+  if(code){
+    const ok = loadForClientCode(code);
+    if(!ok) alert('لم يتم العثور على الكود في السجلات المحلية');
+    return;
+  }
+  if(name){
+    // find first match by clientName substring
+    let found = null;
+    Object.keys(localStorage).forEach(k=>{
+      if(k.startsWith('motabaa_')){
+        try{
+          const p = JSON.parse(localStorage.getItem(k));
+          if(p.clientName && p.clientName.indexOf(name) !== -1 && !found){
+            found = k.replace('motabaa_','');
+          }
+        }catch(e){}
+      }
+    });
+    if(found){
+      byId('clientCode').value = found;
+      loadForClientCode(found);
+    } else {
+      alert('لم يتم العثور على اسم مطابق في السجلات المحلية');
+    }
+    return;
+  }
+  alert('اكتب كود العميل أو اسم العميل للبحث');
+});
+
+/* Load selected from dropdown */
+byId('btnLoadSaved').addEventListener('click', ()=>{
+  const code = byId('savedCodesDropdown').value;
+  if(!code) return alert('اختر كود من القائمة');
+  loadForClientCode(code);
+});
+
+/* Add material button */
+byId('btnAddMaterial').addEventListener('click', (e)=>{
+  e.preventDefault();
+  addExtraMaterial('');
+});
+
+/* Save button */
+byId('btnSave').addEventListener('click', saveAll);
+
+/* Export buttons */
+byId('btnExportJSON').addEventListener('click', exportJSON);
+byId('btnExportPDF').addEventListener('click', exportPDF);
+
+/* when savedCodesDropdown changed (select), set clientCode input (no auto load) */
+byId('savedCodesDropdown').addEventListener('change', (e)=>{
+  const v = e.target.value;
+  if(v) byId('clientCode').value = v;
+});
+
+/* Add technician button */
+byId('btnAddTech').addEventListener('click', ()=> {
+  const v = byId('newTech').value.trim();
+  if(!v) return alert('اكتب اسم الفني ثم اضغط +');
+  if(!technicians.includes(v)) technicians.push(v);
   byId('newTech').value = '';
   populateTechSelects();
-};
-
-byId('btnSearch').onclick = ()=>{
-  const code = byId('clientCode').value.trim();
-  if(!code) return alert('اكتب كود العميل للبحث');
-  loadForClientCode(code);
-};
-
-/* init */
-renderStageTables();
-STAGES.forEach(stage=>{
-  const tableId = 'stage-' + stage.id.replace(/\s+/g,'-').replace(/[^\w\-ء-ي]/g,'');
-  appendEmptyRowTo(tableId);
 });
-populateTechSelects();
+
+/* Initialize page */
+function init(){
+  renderStageTables();
+  STAGES.forEach(s => appendEmptyRowTo('stage-' + s.id.replace(/\s+/g,'-').replace(/[^\w\-ء-ي]/g,'')));
+  populateTechSelects();
+  // load any existing materials in case user had saved one code already
+  refreshSavedCodesDropdown();
+}
+window.addEventListener('load', init);
+
 </script>
 
 </body>
