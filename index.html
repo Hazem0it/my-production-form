@@ -4,11 +4,15 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>متابعة إنتاج — كامل</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+
 <style>
   body{font-family: Tahoma, Arial; direction:rtl; background:#f6f8fb; margin:16px; color:#222}
   h1{text-align:center; color:#0b4f8a; margin-bottom:12px}
-  .top-row{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-bottom:12px}
+  .top-row{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-bottom:8px}
   .top-row label{display:flex;flex-direction:column;min-width:220px;font-size:13px}
+  .top-row .field-inline{display:flex;gap:6px;align-items:center}
   .top-row input[type="text"], .top-row select{padding:6px;width:220px;box-sizing:border-box}
 
   table.stage{width:100%;border-collapse:collapse;margin:18px 0;background:#fff;box-shadow:0 0 0 1px #e6eef8}
@@ -27,9 +31,6 @@
   tr.status-done{background:#e6f7ea}
   tr.status-progress{background:#fffbe6}
   tr.status-error{background:#fdecea}
-
-  /* tech select same width as client name */
-  .tech-select{width:220px!important}
 
   @media (max-width:900px){
     .top-row label{min-width:150px;width:48%}
@@ -62,24 +63,18 @@
   </label>
 
   <label>أضف فني جديد
-    <div style="display:flex;gap:6px">
+    <div class="field-inline">
       <input type="text" id="newTech" placeholder="اكتب اسم الفني"/>
       <button type="button" id="btnAddTech" class="btn-square btn-add" title="أضف فني">+</button>
     </div>
   </label>
-
-  <div style="display:flex;align-items:center">
-    <span id="recallMsg" class="msg" style="display:none"></span>
-  </div>
 </div>
 
 <div class="top-buttons">
   <button type="button" id="btnSave" class="save-btn">حفظ</button>
   <button type="button" id="btnExportJSON" class="save-btn">تصدير JSON</button>
   <button type="button" id="btnExportPDF" class="save-btn">تصدير PDF</button>
-  <select id="savedCodesDropdown" style="padding:6px;border-radius:4px;border:1px solid #ccc;">
-    <option value="">استرجاع كود محفوظ...</option>
-  </select>
+  <span id="recallMsg" class="msg" style="display:none"></span>
   <span id="saveMsg" class="msg" style="display:none"></span>
 </div>
 
@@ -115,9 +110,9 @@
       <td>
         <select class="status-select">
           <option value="">---</option>
-          <option value="done">تم--✔️</option>
-          <option value="progress">تحت التشغيل--⏳</option>
-          <option value="error">متعطل / نقص خامة--❌</option>
+          <option value="done">تم</option>
+          <option value="progress">تحت التشغيل</option>
+          <option value="error">متعطل / نقص خامة</option>
         </select>
       </td>
     </tr>
@@ -164,8 +159,6 @@
   <div id="stagesContainer"></div>
 </form>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
 <script>
 /* ======= Configuration (strict order as requested) ======= */
 const STAGES = [
@@ -194,7 +187,7 @@ function renderStageTables(){
     tbl.id = 'stage-' + stage.id.replace(/\s+/g,'-').replace(/[^\w\-ء-ي]/g,'');
     const title = `
       <thead>
-        <tr><th colspan="${ stage.basic ? 9 : 9 }">${stage.id}</th></tr>
+        <tr><th colspan="${ stage.basic ? 8 : 9 }">${stage.id}</th></tr>
         <tr>
           <th>نوع البند</th>
           <th>اسم البند</th>
@@ -336,8 +329,7 @@ function collectAllData(){
   return out;
 }
 
-// **New function:** saveAll to send data to Google Apps Script
-function saveAll() {
+async function saveAll() {
   const clientCode = byId('clientCode').value.trim();
   if (!clientCode) {
     alert('مطلوب: اكتب كود العميل قبل الحفظ');
@@ -354,174 +346,105 @@ function saveAll() {
   };
 
   // **استبدل هذا الرابط برابط Web App الخاص بك من Google Apps Script**
-  const scriptURL = 'https://script.google.com/macros/s/AKfycbzP3Bg8nG2ZQ78jT3pEwb9lfmeTnHQTbu4GOyc-nPArFxruHDCqiz-ogxTGclpZV1fa_w/exec';
+  const scriptURL = 'https://script.google.com/macros/s/AKfycbwuXSIiW6qrcS_toiPLjJPYnUV2fAc35JvR_09QsZclCiqn5Ow7BrCo3z1C8KFNNvjYGg/exec';
 
   const formData = JSON.stringify(payload);
-
-  const iframe = document.getElementById('g-script-iframe');
-  if (!iframe) {
-    alert("حدث خطأ في إعداد الصفحة. لا يمكن العثور على الإطار.");
-    return;
-  }
 
   const msg = byId('saveMsg');
   msg.style.display = 'inline';
   msg.textContent = 'جاري الحفظ...';
 
-  // Prepare a temporary form to send data
-  const tempForm = document.createElement('form');
-  tempForm.action = scriptURL;
-  tempForm.method = 'POST';
-  tempForm.target = 'g-script-iframe';
-  tempForm.style.display = 'none';
+  try {
+    const response = await fetch(scriptURL, {
+      method: 'POST',
+      body: formData,
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
 
-  const input = document.createElement('input');
-  input.type = 'hidden';
-  input.name = 'payload';
-  input.value = formData;
-  tempForm.appendChild(input);
-
-  const actionInput = document.createElement('input');
-  actionInput.type = 'hidden';
-  actionInput.name = 'action';
-  actionInput.value = 'save';
-  tempForm.appendChild(actionInput);
-
-  document.body.appendChild(tempForm);
-
-  iframe.onload = () => {
-    msg.textContent = 'تم الحفظ بنجاح!';
+    const result = await response.json();
+    if(result.success) {
+      msg.textContent = 'تم الحفظ بنجاح!';
+    } else {
+      msg.textContent = 'حدث خطأ في الحفظ: ' + result.error;
+    }
+  } catch (error) {
+    console.error("Error saving data:", error);
+    msg.textContent = 'حدث خطأ في الاتصال. يرجى المحاولة مرة أخرى.';
+  } finally {
     setTimeout(() => msg.style.display = 'none', 2200);
-    iframe.onload = null;
-  };
-
-  tempForm.submit();
-  document.body.removeChild(tempForm);
+  }
 }
 
-// **New function:** loadForClientCode to fetch data from Google Apps Script
 async function loadForClientCode(code) {
-    const recallMsg = byId('recallMsg');
+  const recallMsg = byId('recallMsg');
+  // **استبدل هذا الرابط برابط Web App الخاص بك من Google Apps Script**
+  const scriptURL = 'https://script.google.com/macros/s/AKfycbwuXSIiW6qrcS_toiPLjJPYnUV2fAc35JvR_09QsZclCiqn5Ow7BrCo3z1C8KFNNvjYGg/exec';
+
+  try {
     recallMsg.style.display = 'inline';
     recallMsg.textContent = 'جاري البحث عن البيانات...';
+    
+    const response = await fetch(`${scriptURL}?clientCode=${encodeURIComponent(code)}`);
+    const result = await response.json();
 
-    // **استبدل هذا الرابط برابط Web App الخاص بك من Google Apps Script**
-    const scriptURL = 'https://script.google.com/macros/s/AKfycbzP3Bg8nG2ZQ78jT3pEwb9lfmeTnHQTbu4GOyc-nPArFxruHDCqiz-ogxTGclpZV1fa_w/exec';
+    if (result.success && result.data) {
+      const data = result.data;
+      byId('clientName').value = data.clientName || '';
+      byId('projectName').value = data.projectName || '';
+      
+      renderStageTables();
+      
+      STAGES.forEach(stage => {
+        const tableId = 'stage-' + stage.id.replace(/\s+/g,'-').replace(/[^\w\-ء-ي]/g,'');
+        const tbody = document.querySelector('#' + tableId + ' tbody');
+        tbody.innerHTML = '';
+        const rows = data.stages[stage.id] || [];
 
-    try {
-        const response = await fetch(`${scriptURL}?clientCode=${encodeURIComponent(code)}`);
-        const result = await response.json();
-
-        if (result.success && result.data) {
-            const data = result.data;
-            byId('clientName').value = data.clientName || '';
-            byId('projectName').value = data.projectName || '';
-            technicians = data.technicians || technicians;
-            populateTechSelects();
-            renderStageTables();
-
-            STAGES.forEach(stage => {
-                const tableId = 'stage-' + stage.id.replace(/\s+/g,'-').replace(/[^\w\-ء-ي]/g,'');
-                const tbody = document.querySelector('#' + tableId + ' tbody');
-                tbody.innerHTML = '';
-                const rows = data.stages[stage.id] || [];
-
-                if (rows.length === 0) {
-                    appendEmptyRowTo(tableId);
-                } else {
-                    rows.forEach(r => {
-                        appendEmptyRowTo(tableId);
-                        const tr = tbody.lastElementChild;
-                        tr.querySelector('.item-type').value = r.type || "";
-                        tr.querySelector('.item-name').value = r.itemName || "";
-                        tr.querySelector('.tech-list').value = r.tech || "";
-                        tr.querySelector('.start-date').value = r.start || "";
-                        tr.querySelector('.end-date').value = r.end || "";
-                        if (tr.querySelector('.units')) tr.querySelector('.units').value = r.units || "";
-                        tr.querySelector('.notes').value = r.notes || "";
-                        tr.querySelector('.status-select').value = r.status || "";
-                        calculateDurationForRow(tr);
-                        updateRowColor(tr);
-                    });
-                }
-            });
-
-            recallMsg.textContent = 'تم استرجاع بيانات العميل: ' + code;
+        if (rows.length === 0 || isRowEmpty(rows[0])) {
+          appendEmptyRowTo(tableId);
         } else {
-            recallMsg.textContent = 'لا توجد بيانات محفوظة لهذا الكود. يمكنك البدء في إدخال بيانات جديدة.';
-            byId('clientName').value = '';
-            byId('projectName').value = '';
-            renderStageTables();
-            STAGES.forEach(s => appendEmptyRowTo('stage-' + s.id.replace(/\s+/g,'-').replace(/[^\w\-ء-ي]/g,'')));
+          rows.forEach(r => {
+            const tpl = document.getElementById(stage.basic ? 'tpl-basic-row' : 'tpl-advanced-row');
+            const clone = tpl.content.cloneNode(true);
+            const tr = clone.querySelector('tr');
+            tr.dataset.stage = stage.id;
+            
+            if(tr.querySelector('.item-type')) tr.querySelector('.item-type').value = r.type || "";
+            if(tr.querySelector('.item-name')) tr.querySelector('.item-name').value = r.itemName || "";
+            if(tr.querySelector('.tech-list')){
+              populateSingleTechSelect(tr.querySelector('.tech-list'));
+              tr.querySelector('.tech-list').value = r.tech || "";
+            }
+            if(tr.querySelector('.start-date')) tr.querySelector('.start-date').value = r.start || "";
+            if(tr.querySelector('.end-date')) tr.querySelector('.end-date').value = r.end || "";
+            if(r.duration) { tr.dataset.duration = r.duration; if(tr.querySelector('.duration')) tr.querySelector('.duration').value = r.duration; }
+            if(tr.querySelector('.units')) tr.querySelector('.units').value = r.units || "";
+            if(tr.querySelector('.notes')) tr.querySelector('.notes').value = r.notes || "";
+            if(tr.querySelector('.status-select')) tr.querySelector('.status-select').value = r.status || "";
+            
+            tbody.appendChild(tr);
+            setupRow(tr);
+            updateRowColor(tr);
+          });
         }
-    } catch (error) {
-        recallMsg.textContent = 'حدث خطأ أثناء الاتصال. يرجى المحاولة مرة أخرى.';
-        console.error("Error fetching data:", error);
-    } finally {
-        setTimeout(() => recallMsg.style.display = 'none', 4000);
+      });
+      recallMsg.textContent = 'تم استرجاع بيانات العميل: ' + code;
+    } else {
+      recallMsg.textContent = 'لا توجد بيانات محفوظة لهذا الكود. يمكنك البدء في إدخال بيانات جديدة.';
+      byId('clientName').value = '';
+      byId('projectName').value = '';
+      renderStageTables();
+      STAGES.forEach(s => appendEmptyRowTo('stage-' + s.id.replace(/\s+/g,'-').replace(/[^\w\-ء-ي]/g,'')));
     }
+  } catch (error) {
+    recallMsg.textContent = 'حدث خطأ أثناء الاتصال. يرجى المحاولة مرة أخرى.';
+    console.error("Error fetching data:", error);
+  } finally {
+    setTimeout(() => recallMsg.style.display = 'none', 4000);
+  }
 }
-
-
-function refreshSavedCodesDropdown(){
-  const dropdown = byId('savedCodesDropdown');
-  // Since we are now using Google Sheets, this dropdown will no longer be functional unless you add more code
-  dropdown.innerHTML = '<option value="">خاصية استرجاع البيانات تعمل الآن بزر "بحث"</option>';
-}
-
-/* Export JSON */
-byId('btnExportJSON').addEventListener('click', ()=>{
-  const data = collectAllData();
-  const blob = new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = (byId('clientCode').value.trim() || 'export') + '.json';
-  a.click();
-  URL.revokeObjectURL(url);
-});
-
-/* Export PDF */
-byId('btnExportPDF').addEventListener('click', ()=>{
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF({ orientation: 'l', unit: 'pt', format: 'a4' });
-  let y = 20;
-  const clientInfo = `كود العميل: ${byId('clientCode').value || ''} | اسم العميل: ${byId('clientName').value || ''} | المشروع: ${byId('projectName').value || ''}`;
-  doc.setFontSize(12);
-  doc.text(clientInfo, 40, y);
-  y += 20;
-  STAGES.forEach(stage=>{
-    const tableId = 'stage-' + stage.id.replace(/\s+/g,'-').replace(/[^\w\-ء-ي]/g,'');
-    const rows = [];
-    document.querySelectorAll('#' + tableId + ' tbody tr').forEach(tr=>{
-      if(isRowEmpty(tr)) return;
-      const arr = [
-        tr.querySelector('.item-type')?.value || "",
-        tr.querySelector('.item-name')?.value || "",
-        tr.querySelector('.tech-list')?.value || "",
-        tr.querySelector('.start-date')?.value || "",
-        tr.querySelector('.end-date')?.value || "",
-        tr.dataset.duration || "",
-      ];
-      if(stage.basic){
-        arr.push(tr.querySelector('.notes')?.value || "");
-      } else {
-        arr.push(tr.querySelector('.units')?.value || "", tr.querySelector('.notes')?.value || "");
-      }
-      arr.push(tr.querySelector('.status-select')?.value || "");
-      rows.push(arr);
-    });
-    if(rows.length){
-      doc.setFontSize(14);
-      doc.text(stage.id, 40, y);
-      y += 18;
-      const headers = stage.basic ? ['نوع','اسم','فني','بدء','انتهاء','مدة','ملاحظات','الحالة'] : ['نوع','اسم','فني','بدء','انتهاء','مدة','عدد','ملاحظات','الحالة'];
-      doc.autoTable({ head:[headers], body: rows, startY:y, styles:{fontSize:9}, margin:{left:40,right:40} });
-      y = doc.lastAutoTable.finalY + 10;
-    }
-  });
-  doc.save((byId('clientCode').value.trim() || 'export') + '.pdf');
-});
 
 /* Events */
 byId('btnSave').onclick = saveAll;
@@ -539,13 +462,6 @@ byId('btnSearch').onclick = ()=>{
   loadForClientCode(code);
 };
 
-byId('savedCodesDropdown').addEventListener('change', e=>{
-  const code = e.target.value;
-  if(!code) return;
-  byId('clientCode').value = code;
-  loadForClientCode(code);
-});
-
 /* init */
 renderStageTables();
 STAGES.forEach(stage=>{
@@ -553,11 +469,7 @@ STAGES.forEach(stage=>{
   appendEmptyRowTo(tableId);
 });
 populateTechSelects();
-refreshSavedCodesDropdown();
 </script>
-
-<iframe id="g-script-iframe" style="display:none;"></iframe>
 
 </body>
 </html>
-
