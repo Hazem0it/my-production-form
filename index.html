@@ -490,7 +490,7 @@ function saveAll(){
     savedAt: new Date().toISOString()
   };
 
-  const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyXZ_CLZ_MY-9eWeD7VSbSOI7qv9tN9IQVkqwjmrPi47wFAYVLiYZWGhyd1x9rcC20wpA/exec';
+  const scriptURL = SCRIPT_URL;
   const msg = byId('recallMsg');
   msg.style.display = 'inline';
   msg.textContent = 'جاري الحفظ...';
@@ -627,7 +627,7 @@ async function init() {
   STAGES.forEach(s => appendEmptyRowTo('stage-' + s.id.replace(/\s+/g, '-').replace(/[^ء-ي\w\s-]/g, '')));
 
   try {
-    const res = await fetch(url);
+    const res = await fetch(SCRIPT_URL);
     const result = await res.json();
     if (result.success) {
       technicians = result.technicians;
@@ -643,6 +643,7 @@ window.addEventListener('load', init);
 
 </body>
 </html>
+
 
 
 
