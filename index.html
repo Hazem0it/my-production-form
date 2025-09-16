@@ -490,7 +490,7 @@ function saveAll(){
     savedAt: new Date().toISOString()
   };
 
-  const scriptURL = 'https://script.google.com/macros/s/AKfycbwXLDpXkwLgk4DhzX6jG0Fx7lkGjIy9O53M6tXRj1z_E_o_M-se5XSRizRcAQZ4VTt-EQ/exec';
+  const scriptURL = SCRIPT_URL;
   const msg = byId('recallMsg');
   msg.style.display = 'inline';
   msg.textContent = 'جاري الحفظ...';
@@ -643,6 +643,7 @@ window.addEventListener('load', init);
 
 </body>
 </html>
+
 
 
 
