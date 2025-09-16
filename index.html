@@ -198,7 +198,7 @@ const STAGES = [
 /* technicians list persisted (unchanged) */
 let technicians = JSON.parse(localStorage.getItem('motabaa_techs') || '["محمود","يوسف","عبد الستار","محمد ربيع"]');
 
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwIFkVSH6E8BrRwDTDy6zXCCDJgQskxZv_TGNKcXkr5VsKqhlyg7CNcAINGvFY384XBSw/exec'; // **تم استبدال هذا الرابط**
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyXZ_CLZ_MY-9eWeD7VSbSOI7qv9tN9IQVkqwjmrPi47wFAYVLiYZWGhyd1x9rcC20wpA/exec'; // **تم استبدال هذا الرابط**
 
 /* ===== helpers ===== */
 function byId(id){ return document.getElementById(id); }
@@ -490,7 +490,7 @@ function saveAll(){
     savedAt: new Date().toISOString()
   };
 
-  const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwIFkVSH6E8BrRwDTDy6zXCCDJgQskxZv_TGNKcXkr5VsKqhlyg7CNcAINGvFY384XBSw/exec';
+  const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyXZ_CLZ_MY-9eWeD7VSbSOI7qv9tN9IQVkqwjmrPi47wFAYVLiYZWGhyd1x9rcC20wpA/exec';
   const msg = byId('recallMsg');
   msg.style.display = 'inline';
   msg.textContent = 'جاري الحفظ...';
@@ -643,6 +643,7 @@ window.addEventListener('load', init);
 
 </body>
 </html>
+
 
 
 
