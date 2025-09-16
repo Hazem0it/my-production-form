@@ -15,581 +15,636 @@
   .top-row .field-inline{display:flex;gap:6px;align-items:center}
   .top-row input[type="text"], .top-row select{padding:6px;width:220px;box-sizing:border-box}
 
-  /* Tabs styling */
-  .tab-buttons { display: flex; justify-content: center; gap: 10px; margin-bottom: 20px; }
-  .tab-buttons button { padding: 10px 20px; border: 1px solid #ddd; background-color: #f1f1f1; cursor: pointer; border-radius: 5px; font-size: 16px; transition: background-color 0.3s; }
-  .tab-buttons button:hover { background-color: #e9e9e9; }
-  .tab-buttons button.active { background-color: #c0c0c0; }
+  .top-controls{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:12px}
+  .top-controls .btn{padding:8px 12px;background:#0b6ed3;color:#fff;border-radius:6px;border:0;cursor:pointer}
+  .top-controls .btn.secondary{background:#0b87ff}
+  .top-controls select{padding:6px;width:220px;box-sizing:border-box}
 
-  /* Stage table styling */
-  .stage-table-container { display: none; }
-  .stage-table-container.active { display: block; }
-  .stage-table { width:100%; border-collapse:collapse; margin-top:20px; }
-  .stage-table caption { font-size:1.2em; font-weight:bold; margin-bottom:10px; color:#0b4f8a; }
-  .stage-table th, .stage-table td { padding:8px; border:1px solid #ddd; text-align:center; font-size:12px; }
-  .stage-table th { background-color:#e6f2ff; font-size:13px; }
-  .stage-table td { background-color:#fff; }
-  .stage-table input, .stage-table select, .stage-table textarea { width:100%; box-sizing:border-box; padding:4px; border:1px solid #ccc; font-family: Tahoma, Arial; font-size:12px; }
-  .add-row-btn { background:#0b4f8a; color:#fff; border:none; padding:5px 10px; margin:5px 0; cursor:pointer; border-radius:3px; }
-  .add-row-btn:hover { background:#0a457a; }
-  .remove-row-btn { background:red; color:white; border:none; padding:5px 10px; cursor:pointer; border-radius:3px; }
-  .status-select.done { background-color: #e6f7ea; }
-  .status-select.progress { background-color: #fffbe6; }
-  .status-select.error { background-color: #fdecea; }
-  .stage-table .status-select, .stage-table .notes, .stage-table .tech-list { min-width:100px; }
-  .loading-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255, 255, 255, 0.7); justify-content: center; align-items: center; }
+  .materials-row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:8px}
+  .material-input{width:220px;padding:6px;border-radius:4px;border:1px solid #ccc;box-sizing:border-box}
+  .material-wrap{display:flex;gap:6px;align-items:center}
 
-  /* Saving animation */
-  .loading-overlay.visible { display: flex; }
-  .loading-spinner { border: 4px solid #f3f3f3; border-top: 4px solid #3498db; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
-  @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+  table.stage{width:100%;border-collapse:collapse;margin:18px 0;background:#fff;box-shadow:0 0 0 1px #e6eef8}
+  table.stage thead th{background:#0b6ed3;color:#fff;padding:8px;text-align:center}
+  table.stage thead tr.sub-header th{background:#dbeeff;color:#000;font-weight:600}
+  table.stage th, table.stage td{border:1px solid #c8d9ee;padding:6px;vertical-align:middle;text-align:center}
+  select,input[type="text"],input[type="number"],input[type="datetime-local"],textarea{width:100%;padding:6px;box-sizing:border-box;font-size:13px}
+  textarea{resize:none;min-height:40px}
 
-  .extra-materials-container {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    margin-top: 10px;
+  .btn-square{width:28px;height:28px;border-radius:4px;border:0;cursor:pointer;font-weight:bold;display:inline-flex;align-items:center;justify-content:center}
+  .btn-add{background:#0b87ff;color:#fff}
+  .btn-del{background:#e74c3c;color:#fff}
+
+  /* row colors light */
+  tr.status-done{background:#e6f7ea}
+  tr.status-progress{background:#fffbe6}
+  tr.status-error{background:#fdecea}
+
+  /* tech select same width as client name */
+  .tech-select{width:220px!important}
+
+  @media (max-width:900px){
+    .top-row label{min-width:150px;width:48%}
+    .top-row input[type="text"], .top-row select{width:100%}
+    table.stage td, table.stage th{font-size:12px;padding:4px}
+    .top-controls select, .material-input { width:100%; }
   }
-  .material-row {
-    display: flex;
-    gap: 10px;
-    align-items: center;
-  }
-  .material-row label {
-    display: block;
-    min-width: 100px;
-  }
-  .material-row input {
-    flex-grow: 1;
-  }
-  .remove-material-btn {
-    background: red;
-    color: white;
-    border: none;
-    padding: 5px 10px;
-    cursor: pointer;
-    border-radius: 3px;
-  }
+
+  .msg{font-size:13px;color:#0b6ed3;margin-left:8px}
+  .save-btn{padding:10px 16px;background:#0b6ed3;color:#fff;border:0;border-radius:6px;cursor:pointer}
+
+  .del-material{background:#e74c3c;color:#fff;border:0;border-radius:4px;padding:6px 8px;cursor:pointer}
 </style>
 </head>
 <body>
-  <h1>نظام متابعة الإنتاج</h1>
-  <div class="loading-overlay" id="loadingOverlay">
-    <div class="loading-spinner"></div>
+<h1>متابعة إنتاج</h1>
+
+<div class="top-row">
+  <label>كود العميل
+    <div class="field-inline">
+      <input type="text" id="clientCode" placeholder="أدخل كود العميل (مفتاح)"/>
+      <button type="button" id="btnSearch" class="btn-square btn-add" title="بحث">🔎</button>
+    </div>
+  </label>
+
+  <label>اسم العميل
+    <input type="text" id="clientName" placeholder="اسم العميل"/>
+  </label>
+
+  <label>اسم المشروع
+    <input type="text" id="projectName" placeholder="اسم المشروع"/>
+  </label>
+
+   <label>أضف فني جديد
+    <div style="display:flex;gap:6px">
+      <input type="text" id="newTech" placeholder="اكتب اسم الفني"/>
+      <button type="button" id="btnAddTech" class="btn-square btn-add" title="أضف فني">+</button>
+    </div>
+  </label>
+
+  <div style="display:flex;align-items:center">
+    <span id="recallMsg" class="msg" style="display:none"></span>
   </div>
+</div>
 
-  <div class="top-row">
-    <label>
-      كود العميل
-      <div class="field-inline">
-        <input type="text" id="clientCode" placeholder="أدخل كود العميل">
-        <button id="btnSearch">بحث</button>
-      </div>
-    </label>
-    <label>
-      كود العميل المحفوظة
-      <div class="field-inline">
-        <select id="savedCodesDropdown">
-          <option value="">-- اختر كود --</option>
-        </select>
-        <button id="btnLoad">تحميل</button>
-      </div>
-    </label>
-    <label>
-      اسم العميل
-      <input type="text" id="clientName">
-    </label>
-    <label>
-      اسم المشروع
-      <input type="text" id="projectName">
-    </label>
-    <button id="btnSave">حفظ</button>
-    <button id="btnExportPDF">تصدير PDF</button>
-  </div>
+<div class="top-controls" aria-label="controls">
+  <button id="btnSave" class="btn">حفظ</button>
+  <button id="btnExportJSON" class="btn secondary">تصدير JSON</button>
+  <button id="btnExportPDF" class="btn secondary">تصدير PDF</button>
 
-  <h2 id="formTitle">متابعة الإنتاج</h2>
+  <input id="internalMaterial" class="material-input" placeholder="الخامة الداخلية" title="الخامة الداخلية (نفس عرض اسم العميل)"/>
+  <input id="externalMaterial" class="material-input" placeholder="الخامة الخارجية" title="الخامة الخارجية (نفس عرض اسم العميل)"/>
+  <button id="btnAddMaterial" class="btn">+</button>
+</div>
 
-  <div class="tab-buttons" id="tabButtons"></div>
+<div id="extraMaterialsContainer" class="materials-row"></div>
 
-  <div id="stageTablesContainer"></div>
-
-  <div class="top-row">
-    <label>
-      خامات داخلية
-      <input type="text" id="internalMaterial" />
-    </label>
-    <label>
-      خامات خارجية
-      <input type="text" id="externalMaterial" />
-    </label>
-  </div>
-
-  <div class="top-row">
-    <label>
-      إضافة فني
-      <div class="field-inline">
-        <input type="text" id="newTech" placeholder="اسم الفني">
-        <button id="btnAddTech">+</button>
-      </div>
-    </label>
-  </div>
-
+<form id="prodForm">
   <template id="tpl-basic-row">
-    <tr>
-      <td><input type="text" class="item-type" placeholder="نوع البند"></td>
-      <td><input type="text" class="item-name" placeholder="اسم البند"></td>
+    <tr class="data-row">
       <td>
-        <select class="tech-list">
-          <option value="">-- اختر فني --</option>
-        </select>
+        <div style="display:flex;align-items:center;gap:6px;justify-content:flex-end">
+          <select class="item-type">
+            <option value="">نوع البند</option>
+            <option>هيكل</option>
+            <option>HPL</option>
+            <option>ضلفة</option>
+          </select>
+          <button type="button" class="btn-square btn-add btn-add-inline" title="أضف صف">+</button>
+        </div>
       </td>
-      <td><input type="datetime-local" class="start-date" dir="ltr"></td>
-      <td><input type="datetime-local" class="end-date" dir="ltr"></td>
-      <td class="duration-display">00:00:00</td>
-      <td><textarea class="notes" rows="1"></textarea></td>
+
+      <td>
+        <div style="display:flex;gap:6px;align-items:center;justify-content:flex-end">
+          <input type="text" class="item-name" placeholder="اسم البند"/>
+          <button type="button" class="btn-square btn-del btn-del-inline" title="حذف صف">-</button>
+        </div>
+      </td>
+
+      <td><select class="tech-list"></select></td>
+      <td><input type="datetime-local" class="start-date"/></td>
+      <td><input type="datetime-local" class="end-date"/></td>
+      <td><input type="text" class="duration" readonly placeholder="ساعات"/></td>
+
+      <td colspan="2"><textarea class="notes" placeholder="ملاحظات..."></textarea></td>
+
       <td>
         <select class="status-select">
-          <option value="not-started">لم يبدأ</option>
-          <option value="progress">جاري العمل</option>
+          <option value="">---</option>
           <option value="done">تم</option>
-          <option value="error">خطأ</option>
+          <option value="progress">تحت التشغيل</option>
+          <option value="error">متعطل / نقص خامة</option>
         </select>
       </td>
-      <td><button class="remove-row-btn">حذف</button></td>
     </tr>
   </template>
 
   <template id="tpl-advanced-row">
-    <tr>
-      <td><input type="text" class="item-type" placeholder="نوع البند"></td>
-      <td><input type="text" class="item-name" placeholder="اسم البند"></td>
+    <tr class="data-row">
       <td>
-        <select class="tech-list">
-          <option value="">-- اختر فني --</option>
-        </select>
+        <div style="display:flex;align-items:center;gap:6px;justify-content:flex-end">
+          <select class="item-type">
+            <option value="">نوع البند</option>
+            <option>هيكل</option>
+            <option>HPL</option>
+            <option>ضلفة</option>
+          </select>
+          <button type="button" class="btn-square btn-add btn-add-inline" title="أضف صف">+</button>
+        </div>
       </td>
-      <td><input type="datetime-local" class="start-date" dir="ltr"></td>
-      <td><input type="datetime-local" class="end-date" dir="ltr"></td>
-      <td class="duration-display">00:00:00</td>
-      <td><input type="text" class="units" placeholder="الوحدات"></td>
-      <td><textarea class="notes" rows="1"></textarea></td>
+
+      <td>
+        <div style="display:flex;gap:6px;align-items:center;justify-content:flex-end">
+          <input type="text" class="item-name" placeholder="اسم البند"/>
+          <button type="button" class="btn-square btn-del btn-del-inline" title="حذف صف">-</button>
+        </div>
+      </td>
+
+      <td><select class="tech-list"></select></td>
+      <td><input type="datetime-local" class="start-date"/></td>
+      <td><input type="datetime-local" class="end-date"/></td>
+      <td><input type="text" class="duration" readonly placeholder="ساعات"/></td>
+      <td><input type="number" class="units" min="0" placeholder="عدد"/></td>
+      <td><textarea class="notes" placeholder="ملاحظات..."></textarea></td>
       <td>
         <select class="status-select">
-          <option value="not-started">لم يبدأ</option>
-          <option value="progress">جاري العمل</option>
+          <option value="">---</option>
           <option value="done">تم</option>
-          <option value="error">خطأ</option>
+          <option value="progress">تحت التشغيل</option>
+          <option value="error">متعطل / نقص خامة</option>
         </select>
       </td>
-      <td><button class="remove-row-btn">حذف</button></td>
     </tr>
   </template>
 
-  <script>
-    const url = 'https://script.google.com/macros/s/AKfycbz7PbqLYqM-iD3AI84qcq_raDS9HLAwxRKSo9V3IBjC3UZD-AoEdghnRSiOpSJjEteqoQ/exec';
-    const byId = id => document.getElementById(id);
+  <div id="stagesContainer"></div>
 
-    const STAGES = [
-      { id: 'التقطيع', basic: true },
-      { id: 'المفحار', basic: true },
-      { id: 'القشاط/الشريط', basic: true },
-      { id: 'المكبس', basic: false },
-      { id: 'المرحلية 1', basic: false },
-      { id: 'CNC', basic: false },
-      { id: 'المرحليه 2', basic: false },
-      { id: 'التجميع', basic: false },
-      { id: 'الجودة النهائية', basic: false }
-    ];
+</form>
 
-    let technicians = [];
+<script>
+/* ======= Configuration (unchanged order) ======= */
+const STAGES = [
+  { id: "التقطيع", basic: true },
+  { id: "المفحار", basic: true },
+  { id: "القشاط/الشريط", basic: true },
+  { id: "المكبس", basic: false },
+  { id: "المرحلية 1", basic: false },
+  { id: "CNC", basic: false },
+  { id: "المرحليه 2", basic: false },
+  { id: "التجميع", basic: false },
+  { id: "الجودة النهائية", basic: false }
+];
 
-    function loading(show) {
-      byId('loadingOverlay').classList.toggle('visible', show);
+/* technicians list persisted (unchanged) */
+let technicians = JSON.parse(localStorage.getItem('motabaa_techs') || '["محمود","يوسف","عبد الستار","محمد ربيع"]');
+
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz7PbqLYqM-iD3AI84qcq_raDS9HLAwxRKSo9V3IBjC3UZD-AoEdghnRSiOpSJjEteqoQ/exec'; // **تم استبدال هذا الرابط**
+
+/* ===== helpers ===== */
+function byId(id){ return document.getElementById(id); }
+function create(tag, html){ const e = document.createElement(tag); if(html) e.innerHTML = html; return e; }
+
+/* ===== render stage tables (unchanged) ===== */
+function renderStageTables(){
+  const container = byId('stagesContainer');
+  container.innerHTML = '';
+  STAGES.forEach(stage=>{
+    const tbl = create('table');
+    tbl.className = 'stage';
+    tbl.id = 'stage-' + stage.id.replace(/\s+/g,'-').replace(/[^\w\-ء-ي]/g,'');
+    const title = `
+      <thead>
+        <tr><th colspan="${ stage.basic ? 9 : 9 }">${stage.id}</th></tr>
+        <tr>
+          <th>نوع البند</th>
+          <th>اسم البند</th>
+          <th>اسم الفني</th>
+          <th>بدء</th>
+          <th>انتهاء</th>
+          <th>مدة تشغيل</th>
+          ${ stage.basic ? '<th colspan="2">ملاحظات</th>' : '<th>عدد الوحدات</th><th>ملاحظات</th>' }
+          <th>الحالة</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    `;
+    tbl.innerHTML = title;
+    container.appendChild(tbl);
+  });
+}
+
+/* Append empty row (unchanged) */
+function appendEmptyRowTo(stageId){
+  const stage = STAGES.find(s => ('stage-' + s.id.replace(/\s+/g,'-').replace(/[^\w\-ء-ي]/g,'')) === stageId || s.id === stageId);
+  if(!stage) return;
+  const tpl = document.getElementById(stage.basic ? 'tpl-basic-row' : 'tpl-advanced-row');
+  const clone = tpl.content.cloneNode(true);
+  const tr = clone.querySelector('tr');
+  tr.dataset.stage = stage.id;
+  const tbody = document.querySelector('#' + (stageId.startsWith('stage-') ? stageId : 'stage-' + stage.id.replace(/\s+/g,'-').replace(/[^\w\-ء-ي]/g,'')) + ' tbody');
+  tbody.appendChild(tr);
+  setupRow(tr);
+}
+
+/* setup row listeners (unchanged) */
+function setupRow(tr){
+  if(!tr) return;
+  // populate tech select
+  const techSel = tr.querySelector('.tech-list');
+  if(techSel) populateSingleTechSelect(techSel);
+
+  // add button (inline)
+  const addBtn = tr.querySelector('.btn-add-inline');
+  if(addBtn) addBtn.onclick = ()=> addRowAfter(tr);
+
+  // delete button
+  const delBtn = tr.querySelector('.btn-del-inline');
+  if(delBtn) delBtn.onclick = ()=> {
+    const tbody = tr.parentNode;
+    tr.remove();
+    if(tbody.querySelectorAll('tr').length === 0){
+      appendEmptyRowTo(tbody.parentNode.id);
     }
+  };
 
-    function populateTechSelects() {
-      const techSelects = document.querySelectorAll('.tech-list');
-      techSelects.forEach(select => {
-        const selectedValue = select.value;
-        select.innerHTML = '<option value="">-- اختر فني --</option>';
-        technicians.forEach(tech => {
-          const option = document.createElement('option');
-          option.value = tech;
-          option.textContent = tech;
-          select.appendChild(option);
-        });
-        select.value = selectedValue;
+  // start/end change -> duration
+  const start = tr.querySelector('.start-date');
+  const end = tr.querySelector('.end-date');
+  [start,end].forEach(inp => { if(inp) inp.onchange = ()=> calculateDurationForRow(tr); });
+
+  // status -> color
+  const statusSel = tr.querySelector('.status-select');
+  if(statusSel) statusSel.onchange = ()=> updateRowColor(tr);
+}
+
+/* populate single tech select element (unchanged) */
+function populateSingleTechSelect(sel){
+  const cur = sel.value || "";
+  sel.innerHTML = '<option value="">-- اختر فني --</option>';
+  technicians.forEach(t => {
+    const o = document.createElement('option'); o.value = t; o.textContent = t; sel.appendChild(o);
+  });
+  if(cur) sel.value = cur;
+}
+
+/* populate all tech selects incl top mainTech (unchanged) */
+function populateTechSelects(){
+  document.querySelectorAll('.tech-list, #mainTech').forEach(sel => {
+    const cur = sel.value || "";
+    sel.innerHTML = '<option value="">-- اختر فني --</option>';
+    technicians.forEach(t => { const o=document.createElement('option'); o.value=t; o.textContent=t; sel.appendChild(o); });
+    if(cur) sel.value = cur;
+  });
+  // persist techs
+  localStorage.setItem('motabaa_techs', JSON.stringify(technicians));
+}
+
+/* add row after current tr (unchanged) */
+function addRowAfter(tr){
+  const stageId = tr.closest('table').id;
+  const stage = STAGES.find(s => 'stage-' + s.id.replace(/\s+/g,'-').replace(/[^\w\-ء-ي]/g,'') === stageId);
+  const tpl = document.getElementById(stage.basic ? 'tpl-basic-row' : 'tpl-advanced-row');
+  const clone = tpl.content.cloneNode(true);
+  const newTr = clone.querySelector('tr');
+  newTr.dataset.stage = stage.id;
+  tr.parentNode.insertBefore(newTr, tr.nextSibling);
+  setupRow(newTr);
+}
+
+/* duration calc (unchanged) */
+function calculateDurationForRow(tr){
+  const s = tr.querySelector('.start-date')?.value;
+  const e = tr.querySelector('.end-date')?.value;
+  const durEl = tr.querySelector('.duration');
+  if(s && e){
+    const sd = new Date(s), ed = new Date(e);
+    if(!isNaN(sd) && !isNaN(ed) && ed > sd){
+      const hours = (ed - sd) / 36e5;
+      if(durEl) durEl.value = hours.toFixed(2);
+      tr.dataset.duration = hours.toFixed(2);
+    } else {
+      if(durEl) durEl.value = "";
+      tr.dataset.duration = "";
+    }
+  } else {
+    if(durEl) durEl.value = "";
+    tr.dataset.duration = "";
+  }
+  updateRowColor(tr);
+}
+
+/* isRowEmpty (slightly adjusted as in your version) */
+function isRowEmpty(tr){
+  const name = (tr.querySelector('.item-name')?.value || "").trim();
+  return name === "";
+}
+
+/* update row color (unchanged) */
+function updateRowColor(tr){
+  tr.classList.remove('status-done','status-progress','status-error');
+  if(isRowEmpty(tr)) return;
+  const val = tr.querySelector('.status-select')?.value || "";
+  if(!val) return;
+  if(val === 'done') tr.classList.add('status-done');
+  else if(val === 'progress') tr.classList.add('status-progress');
+  else if(val === 'error') tr.classList.add('status-error');
+}
+
+/* collectAllData: returns stages map (kept same) */
+function collectAllData(){
+  const out = {};
+  STAGES.forEach(stage=>{
+    const id = stage.id;
+    out[id] = [];
+    const tableId = 'stage-' + stage.id.replace(/\s+/g,'-').replace(/[^\w\-ء-ي]/g,'');
+    document.querySelectorAll('#' + tableId + ' tbody tr').forEach(tr=>{
+      if(isRowEmpty(tr)) return;
+      out[id].push({
+        type: tr.querySelector('.item-type')?.value || "",
+        itemName: tr.querySelector('.item-name')?.value || "",
+        tech: tr.querySelector('.tech-list')?.value || "",
+        start: tr.querySelector('.start-date')?.value || "",
+        end: tr.querySelector('.end-date')?.value || "",
+        duration: tr.dataset.duration || "",
+        units: tr.querySelector('.units') ? tr.querySelector('.units').value : "",
+        notes: tr.querySelector('.notes')?.value || "",
+        status: tr.querySelector('.status-select')?.value || ""
       });
-    }
+    });
+  });
+  return out;
+}
 
-    function populateSavedCodesDropdown(codes) {
-      const select = byId('savedCodesDropdown');
-      select.innerHTML = '<option value="">-- اختر كود --</option>';
-      codes.forEach(code => {
-        const option = document.createElement('option');
-        option.value = code;
-        option.textContent = code;
-        select.appendChild(option);
-      });
-    }
+/* --------- NEW: materials helpers --------- */
+function addExtraMaterial(value){
+  const wrap = document.createElement('div');
+  wrap.className = 'material-wrap';
+  const inp = document.createElement('input');
+  inp.type = 'text';
+  inp.className = 'extra-material';
+  inp.placeholder = 'خامة إضافية';
+  inp.value = value || '';
+  inp.style.width = '220px';
+  inp.style.padding = '6px';
+  inp.style.boxSizing = 'border-box';
 
-    function calculateDuration(start, end) {
-      if (!start || !end) return '00:00:00';
-      const startDate = new Date(start);
-      const endDate = new Date(end);
-      if (endDate < startDate) return '00:00:00';
-      
-      const diffInMilliseconds = endDate - startDate;
-      const hours = Math.floor(diffInMilliseconds / 3600000);
-      const minutes = Math.floor((diffInMilliseconds % 3600000) / 60000);
-      const seconds = Math.floor((diffInMilliseconds % 60000) / 1000);
-      
-      return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-    }
+  const del = document.createElement('button');
+  del.type = 'button';
+  del.className = 'del-material';
+  del.textContent = '❌';
+  del.onclick = (e) => { e.preventDefault(); wrap.remove(); };
 
-    function updateRowColor(row) {
-      const status = row.querySelector('.status-select').value;
-      const statuses = ['not-started', 'progress', 'done', 'error'];
-      statuses.forEach(s => row.classList.remove(s));
-      row.classList.add(status.replace(/\s+/g, '-').replace(/[^ء-ي\w\s-]/g, ''));
-    }
+  wrap.appendChild(inp);
+  wrap.appendChild(del);
+  byId('extraMaterialsContainer').appendChild(wrap);
+}
 
-    function setupRow(row) {
-      const startDateInput = row.querySelector('.start-date');
-      const endDateInput = row.querySelector('.end-date');
-      const durationCell = row.querySelector('.duration-display');
-      const statusSelect = row.querySelector('.status-select');
-      const removeBtn = row.querySelector('.remove-row-btn');
+/* Export JSON (includes materials + stages + top fields) */
+function exportJSON(){
+  const clientCode = byId('clientCode').value.trim();
+  const payload = {
+    clientCode,
+    clientName: byId('clientName').value.trim(),
+    projectName: byId('projectName').value.trim(),
+    internalMaterial: byId('internalMaterial').value || '',
+    externalMaterial: byId('externalMaterial').value || '',
+    extraMaterials: Array.from(document.querySelectorAll('.extra-material')).map(i=>i.value),
+    technicians,
+    stages: collectAllData(),
+    savedAt: new Date().toISOString()
+  };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], {type: 'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = (clientCode || 'export') + '.json';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
 
-      if(startDateInput && endDateInput) {
-        const updateDuration = () => {
-          const duration = calculateDuration(startDateInput.value, endDateInput.value);
-          if (durationCell) durationCell.textContent = duration;
-        };
-        startDateInput.addEventListener('change', updateDuration);
-        endDateInput.addEventListener('change', updateDuration);
+/* Export PDF using jsPDF + autoTable */
+function exportPDF(){
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({orientation:'l', unit:'pt', format:'a4'});
+  let y = 30;
+  doc.setFontSize(14);
+  doc.text('متابعة إنتاج', 40, y);
+  y += 20;
+  doc.setFontSize(11);
+  doc.text('كود العميل: ' + (byId('clientCode').value || ''), 40, y); y += 16;
+  doc.text('اسم العميل: ' + (byId('clientName').value || ''), 40, y); y += 16;
+  doc.text('اسم المشروع: ' + (byId('projectName').value || ''), 40, y); y += 16;
+  doc.text('الخامة الداخلية: ' + (byId('internalMaterial').value || ''), 40, y); y += 16;
+  doc.text('الخامة الخارجية: ' + (byId('externalMaterial').value || ''), 40, y); y += 16;
+  const extras = Array.from(document.querySelectorAll('.extra-material')).map(i=>i.value).filter(Boolean);
+  extras.forEach((m,i)=>{ doc.text('خامة إضافية ' + (i+1) + ': ' + m, 40, y); y += 14; });
+
+  // for each stage use autoTable
+  STAGES.forEach(stage=>{
+    const tableId = 'stage-' + stage.id.replace(/\s+/g,'-').replace(/[^\w\-ء-ي]/g,'');
+    const rows = [];
+    document.querySelectorAll('#' + tableId + ' tbody tr').forEach(tr=>{
+      if(isRowEmpty(tr)) return;
+      const row = [
+        tr.querySelector('.item-type')?.value || "",
+        tr.querySelector('.item-name')?.value || "",
+        tr.querySelector('.tech-list')?.value || "",
+        tr.querySelector('.start-date')?.value || "",
+        tr.querySelector('.end-date')?.value || "",
+        tr.dataset.duration || ""
+      ];
+      if(stage.basic){
+        row.push(tr.querySelector('.notes')?.value || "");
+      } else {
+        row.push(tr.querySelector('.units')?.value || "", tr.querySelector('.notes')?.value || "");
       }
-      
-      if (statusSelect) {
-        statusSelect.addEventListener('change', () => updateRowColor(row));
-      }
-      
-      if(removeBtn) {
-        removeBtn.addEventListener('click', () => {
-          row.remove();
-        });
-      }
+      row.push(tr.querySelector('.status-select')?.value || "");
+      rows.push(row);
+    });
+    if(rows.length){
+      doc.setFontSize(12);
+      doc.text(stage.id, 40, y); y += 14;
+      const headers = stage.basic ? ['نوع','اسم','فني','بدء','انتهاء','مدة','ملاحظات','الحالة'] : ['نوع','اسم','فني','بدء','انتهاء','مدة','عدد','ملاحظات','الحالة'];
+      doc.autoTable({ head:[headers], body: rows, startY: y, styles:{fontSize:9}, margin:{left:40,right:40} });
+      y = doc.lastAutoTable.finalY + 12;
+    }
+  });
+
+  doc.save((byId('clientCode').value.trim() || 'export') + '.pdf');
+}
+
+/* Save (to Google Apps Script) - local storage removed */
+function saveAll(){
+  const clientCode = byId('clientCode').value.trim();
+  if(!clientCode){ alert('مطلوب: اكتب كود العميل قبل الحفظ'); return; }
+
+  const payload = {
+    clientCode,
+    clientName: byId('clientName').value.trim(),
+    projectName: byId('projectName').value.trim(),
+    mainTech: byId('mainTech')?.value || '', // Check if element exists
+    technicians,
+    internalMaterial: byId('internalMaterial').value || '',
+    externalMaterial: byId('externalMaterial').value || '',
+    extraMaterials: Array.from(document.querySelectorAll('.extra-material')).map(i=>i.value),
+    stages: collectAllData(),
+    savedAt: new Date().toISOString()
+  };
+
+  const scriptURL = SCRIPT_URL;
+  const msg = byId('recallMsg');
+  msg.style.display = 'inline';
+  msg.textContent = 'جاري الحفظ...';
+
+  fetch(scriptURL, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+    headers: {
+      'Content-Type': 'application/json'
+    }
+  })
+  .then(response => response.json())
+  .then(result => {
+    if(result.success) {
+      msg.textContent = 'تم الحفظ بنجاح إلى جوجل شيت!';
+    } else {
+      msg.textContent = 'حدث خطأ في الحفظ إلى جوجل شيت: ' + result.error;
+    }
+  })
+  .catch(error => {
+    console.error("Error saving data:", error);
+    msg.textContent = 'حدث خطأ في الاتصال. يرجى المحاولة مرة أخرى.';
+  })
+  .finally(() => {
+    setTimeout(() => msg.style.display = 'none', 2200);
+  });
+}
+
+/* New load from Google Sheets (instead of localStorage) */
+function loadFromGoogleSheets(){
+    const code = byId('clientCode').value.trim();
+    if(!code){
+        alert('يرجى إدخال كود العميل للبحث.');
+        return;
     }
 
-    function appendEmptyRowTo(tableId) {
-      const stageId = tableId.replace('stage-', '');
-      const stage = STAGES.find(s => 'stage-' + s.id.replace(/\s+/g, '-').replace(/[^ء-ي\w\s-]/g, '') === tableId);
-      const tpl = document.getElementById(stage.basic ? 'tpl-basic-row' : 'tpl-advanced-row');
-      const clone = tpl.content.cloneNode(true);
-      const tr = clone.querySelector('tr');
-      tr.dataset.stage = stage.id;
-      
-      byId(tableId).querySelector('tbody').appendChild(tr);
-      setupRow(tr);
-      populateTechSelects();
-    }
+    const recallMsg = byId('recallMsg');
+    recallMsg.style.display = 'inline';
+    recallMsg.textContent = 'جاري البحث...';
 
-    function appendExistingRowTo(tableId, r) {
-      const stageId = tableId.replace('stage-', '');
-      const stage = STAGES.find(s => 'stage-' + s.id.replace(/\s+/g, '-').replace(/[^ء-ي\w\s-]/g, '') === tableId);
-      const tbody = byId(tableId).querySelector('tbody');
-      const tpl = document.getElementById(stage.basic ? 'tpl-basic-row' : 'tpl-advanced-row');
-      const clone = tpl.content.cloneNode(true);
-      const tr = clone.querySelector('tr');
-      tr.dataset.stage = stage.id;
-      
-      if(tr.querySelector('.item-type')) tr.querySelector('.item-type').value = r.type || "";
-      if(tr.querySelector('.item-name')) tr.querySelector('.item-name').value = r.itemName || "";
-      if(tr.querySelector('.tech-list')){
-        populateSingleTechSelect(tr.querySelector('.tech-list'));
-        tr.querySelector('.tech-list').value = r.tech || "";
-      }
-      if(tr.querySelector('.start-date')) tr.querySelector('.start-date').value = r.start || "";
-      if(tr.querySelector('.end-date')) tr.querySelector('.end-date').value = r.end || "";
-      if(r.duration) { tr.dataset.duration = r.duration; if(tr.querySelector('.duration-display')) tr.querySelector('.duration-display').textContent = r.duration; }
-      if(tr.querySelector('.units')) tr.querySelector('.units').value = r.units || "";
-      if(tr.querySelector('.notes')) tr.querySelector('.notes').value = r.notes || "";
-      if(tr.querySelector('.status-select')) tr.querySelector('.status-select').value = r.status || "";
-      
-      tbody.appendChild(tr);
-      setupRow(tr);
-      updateRowColor(tr);
-    }
-    
-    function populateSingleTechSelect(select) {
-        select.innerHTML = '<option value="">-- اختر فني --</option>';
-        technicians.forEach(tech => {
-          const option = document.createElement('option');
-          option.value = tech;
-          option.textContent = tech;
-          select.appendChild(option);
-        });
-    }
+    const scriptURL = SCRIPT_URL + '?clientCode=' + encodeURIComponent(code);
 
-    async function loadForClientCode(clientCode) {
-      loading(true);
-      try {
-        const res = await fetch(url + '?clientCode=' + clientCode);
-        const result = await res.json();
-        loading(false);
+    fetch(scriptURL)
+        .then(response => response.json())
+        .then(result => {
+            if(result.success && result.data){
+                const payload = result.data;
+                byId('clientName').value = payload.clientName || '';
+                byId('projectName').value = payload.projectName || '';
+                byId('internalMaterial').value = payload.internalMaterial || '';
+                byId('externalMaterial').value = payload.externalMaterial || '';
+                byId('extraMaterialsContainer').innerHTML = '';
+                (payload.extraMaterials || []).forEach(m => addExtraMaterial(m));
 
-        if (result.success) {
-          const data = result.data;
-          if (data) {
-            byId('clientName').value = data.clientName || "";
-            byId('projectName').value = data.projectName || "";
-            byId('internalMaterial').value = data.internalMaterial || "";
-            byId('externalMaterial').value = data.externalMaterial || "";
-            byId('formTitle').textContent = `متابعة إنتاج — ${data.projectName}`;
-
-            technicians = data.technicians;
-            populateTechSelects();
-
-            // Clear existing rows
-            STAGES.forEach(s => byId('stage-' + s.id.replace(/\s+/g, '-').replace(/[^ء-ي\w\s-]/g, '')).querySelector('tbody').innerHTML = '');
-
-            // Render data rows for each stage
-            for (const stage of STAGES) {
-              const stageData = data.stages[stage.id];
-              if (stageData && stageData.length > 0) {
-                stageData.forEach(r => appendExistingRowTo('stage-' + stage.id.replace(/\s+/g, '-').replace(/[^ء-ي\w\s-]/g, ''), r));
-              } else {
-                appendEmptyRowTo('stage-' + stage.id.replace(/\s+/g, '-').replace(/[^ء-ي\w\s-]/g, ''));
-              }
-            }
-          } else {
-            alert("لم يتم العثور على كود العميل.");
-          }
-        } else {
-          alert("خطأ: " + result.error);
-        }
-      } catch (error) {
-        loading(false);
-        console.error("Error fetching data:", error);
-        alert("حدث خطأ أثناء جلب البيانات: " + error.message);
-      }
-    }
-    
-    function renderStageTables() {
-      const container = byId('stageTablesContainer');
-      const tabButtons = byId('tabButtons');
-      STAGES.forEach((stage, index) => {
-        const stageId = stage.id.replace(/\s+/g, '-').replace(/[^ء-ي\w\s-]/g, '');
-        const tableHtml = `
-          <div id="stage-table-${stageId}" class="stage-table-container">
-            <table class="stage-table">
-              <caption>${stage.id}</caption>
-              <thead>
-                <tr>
-                  <th>نوع البند</th>
-                  <th>اسم البند</th>
-                  <th>اسم الفني</th>
-                  <th>البدء</th>
-                  <th>الانتهاء</th>
-                  <th>المدة</th>
-                  ${stage.basic ? '' : '<th>الوحدات</th>'}
-                  <th>ملاحظات</th>
-                  <th>الحالة</th>
-                  <th>إجراء</th>
-                </tr>
-              </thead>
-              <tbody></tbody>
-            </table>
-            <button class="add-row-btn" data-table-id="stage-table-${stageId}">+ إضافة بند</button>
-          </div>
-        `;
-        const buttonHtml = `<button data-target="stage-table-${stageId}" class="${index === 0 ? 'active' : ''}">${stage.id}</button>`;
-        container.innerHTML += tableHtml;
-        tabButtons.innerHTML += buttonHtml;
-      });
-      
-      byId('tabButtons').querySelectorAll('button').forEach(button => {
-        button.addEventListener('click', () => {
-          byId('tabButtons').querySelectorAll('button').forEach(b => b.classList.remove('active'));
-          button.classList.add('active');
-          document.querySelectorAll('.stage-table-container').forEach(table => {
-            table.classList.remove('active');
-          });
-          byId(button.dataset.target).classList.add('active');
-        });
-      });
-      document.querySelector('.stage-table-container').classList.add('active');
-
-      document.querySelectorAll('.add-row-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-          appendEmptyRowTo(btn.dataset.tableId);
-        });
-      });
-    }
-
-    function collectData() {
-        const data = {
-            clientCode: byId('clientCode').value,
-            clientName: byId('clientName').value,
-            projectName: byId('projectName').value,
-            internalMaterial: byId('internalMaterial').value,
-            externalMaterial: byId('externalMaterial').value,
-            stages: {}
-        };
-
-        STAGES.forEach(stage => {
-            const tableId = `stage-table-${stage.id.replace(/\s+/g, '-').replace(/[^ء-ي\w\s-]/g, '')}`;
-            const rows = byId(tableId).querySelectorAll('tbody tr');
-            const stageData = [];
-            rows.forEach(row => {
-                const rowData = {
-                    type: row.querySelector('.item-type').value,
-                    itemName: row.querySelector('.item-name').value,
-                    tech: row.querySelector('.tech-list').value,
-                    start: row.querySelector('.start-date').value,
-                    end: row.querySelector('.end-date').value,
-                    duration: row.querySelector('.duration-display').textContent,
-                    notes: row.querySelector('.notes').value,
-                    status: row.querySelector('.status-select').value
-                };
-                if (!stage.basic) {
-                    rowData.units = row.querySelector('.units').value;
+                if(Array.isArray(payload.technicians) && payload.technicians.length){
+                  technicians = payload.technicians;
                 }
-                stageData.push(rowData);
-            });
-            data.stages[stage.id] = stageData;
-        });
+                populateTechSelects();
 
-        return data;
-    }
-
-    async function saveAll() {
-      loading(true);
-      const data = collectData();
-      try {
-        const res = await fetch(url, {
-          method: 'POST',
-          body: JSON.stringify(data),
-          headers: { 'Content-Type': 'application/json' }
-        });
-        const result = await res.json();
-        loading(false);
-
-        if (result.success) {
-          alert("تم حفظ البيانات بنجاح!");
-        } else {
-          alert("خطأ: " + result.error);
-        }
-      } catch (error) {
-        loading(false);
-        console.error("Error saving data:", error);
-        alert("حدث خطأ أثناء حفظ البيانات: " + error.message);
-      }
-    }
-
-    function exportPDF() {
-      const { jsPDF } = window.jspdf;
-      const doc = new jsPDF();
-      
-      const tables = [];
-      STAGES.forEach(stage => {
-          const table = document.getElementById(`stage-table-${stage.id.replace(/\s+/g, '-').replace(/[^ء-ي\w\s-]/g, '')}`);
-          if (table) {
-              const head = Array.from(table.querySelector('thead tr').children).slice(0, -1).map(th => th.textContent);
-              const body = Array.from(table.querySelector('tbody').children).map(tr => Array.from(tr.children).slice(0, -1).map(td => {
-                  const input = td.querySelector('input, select, textarea');
-                  if (input) return input.value;
-                  return td.textContent;
-              }));
-              tables.push({ id: stage.id, head: head, body: body });
-          }
-      });
-
-      let startY = 10;
-      doc.setFont('Amiri', 'normal');
-      doc.addFont('Amiri-Regular.ttf', 'Amiri', 'normal');
-      doc.addFont('Amiri-Bold.ttf', 'Amiri', 'bold');
-
-      doc.text(`متابعة إنتاج — ${byId('projectName').value}`, 105, startY, null, null, 'center');
-      startY += 10;
-      doc.setFontSize(10);
-      doc.text(`كود العميل: ${byId('clientCode').value}`, 10, startY, { align: 'right' });
-      doc.text(`اسم العميل: ${byId('clientName').value}`, 10, startY + 5, { align: 'right' });
-      doc.text(`خامات داخلية: ${byId('internalMaterial').value}`, 10, startY + 10, { align: 'right' });
-      doc.text(`خامات خارجية: ${byId('externalMaterial').value}`, 10, startY + 15, { align: 'right' });
-      startY += 25;
-
-      tables.forEach(table => {
-          doc.addPage();
-          doc.setFontSize(14);
-          doc.text(table.id, 105, 15, null, null, 'center');
-          
-          doc.autoTable({
-              startY: 20,
-              head: [table.head],
-              body: table.body,
-              theme: 'grid',
-              styles: { font: 'Amiri', fontStyle: 'normal', halign: 'center' },
-              headStyles: { fontStyle: 'bold', fillColor: [230, 242, 255] },
-              bodyStyles: { font: 'Amiri', fontStyle: 'normal' },
-              didDrawCell: data => {
-                  if (data.cell.text[0] === 'تم' || data.cell.text[0] === 'done') {
-                      doc.setFillColor(230, 247, 234);
-                      doc.rect(data.cell.x, data.cell.y, data.cell.width, data.cell.height, 'F');
+                STAGES.forEach(stage=>{
+                  const tableId = 'stage-' + stage.id.replace(/\s+/g,'-').replace(/[^\w\-ء-ي]/g,'');
+                  const tbody = document.querySelector('#' + tableId + ' tbody');
+                  tbody.innerHTML = '';
+                  const rows = (payload.stages && payload.stages[stage.id]) || [];
+                  if(rows.length === 0){
+                    appendEmptyRowTo(tableId);
+                  } else {
+                    rows.forEach(r => {
+                      const tpl = document.getElementById(stage.basic ? 'tpl-basic-row' : 'tpl-advanced-row');
+                      const clone = tpl.content.cloneNode(true);
+                      const tr = clone.querySelector('tr');
+                      tr.dataset.stage = stage.id;
+                      if(tr.querySelector('.item-type')) tr.querySelector('.item-type').value = r.type || "";
+                      if(tr.querySelector('.item-name')) tr.querySelector('.item-name').value = r.itemName || "";
+                      if(tr.querySelector('.tech-list')){
+                        populateSingleTechSelect(tr.querySelector('.tech-list'));
+                        tr.querySelector('.tech-list').value = r.tech || "";
+                      }
+                      if(tr.querySelector('.start-date')) tr.querySelector('.start-date').value = r.start || "";
+                      if(tr.querySelector('.end-date')) tr.querySelector('.end-date').value = r.end || "";
+                      if(r.duration) { tr.dataset.duration = r.duration; if(tr.querySelector('.duration')) tr.querySelector('.duration').value = r.duration; }
+                      if(tr.querySelector('.units')) tr.querySelector('.units').value = r.units || "";
+                      if(tr.querySelector('.notes')) tr.querySelector('.notes').value = r.notes || "";
+                      if(tr.querySelector('.status-select')) tr.querySelector('.status-select').value = r.status || "";
+                      tbody.appendChild(tr);
+                      setupRow(tr);
+                      updateRowColor(tr);
+                    });
                   }
-              }
-          });
-      });
+                });
 
-      doc.save(`متابعة_إنتاج_${byId('clientCode').value}.pdf`);
-    }
+                recallMsg.textContent = 'تم استرجاع البيانات بنجاح من جوجل شيت!';
+            } else {
+                recallMsg.textContent = 'لم يتم العثور على الكود في جوجل شيت.';
+            }
+        })
+        .catch(error => {
+            console.error("Error fetching data:", error);
+            recallMsg.textContent = 'حدث خطأ في الاتصال. يرجى المحاولة مرة أخرى.';
+        })
+        .finally(() => {
+            setTimeout(() => recallMsg.style.display = 'none', 2200);
+        });
+}
 
-    byId('btnSearch').addEventListener('click', () => {
-      const code = byId('clientCode').value;
-      if (!code) return alert('أدخل كود العميل');
-      loadForClientCode(code);
-    });
+/* Add material button */
+byId('btnAddMaterial').addEventListener('click', (e)=>{
+  e.preventDefault();
+  addExtraMaterial('');
+});
 
-    byId('btnLoad').addEventListener('click', () => {
-      const code = byId('savedCodesDropdown').value;
-      if (!code) return alert('اختر كود من القائمة');
-      loadForClientCode(code);
-    });
+/* Save button */
+byId('btnSave').addEventListener('click', saveAll);
 
-    byId('btnSave').addEventListener('click', saveAll);
-    byId('btnExportPDF').addEventListener('click', exportPDF);
-    byId('btnExportJSON').addEventListener('click', exportJSON);
+/* Search button */
+byId('btnSearch').addEventListener('click', loadFromGoogleSheets);
 
-    byId('savedCodesDropdown').addEventListener('change', (e) => {
-      const v = e.target.value;
-      if (v) byId('clientCode').value = v;
-    });
+/* Export buttons */
+byId('btnExportJSON').addEventListener('click', exportJSON);
+byId('btnExportPDF').addEventListener('click', exportPDF);
 
-    byId('btnAddTech').addEventListener('click', () => {
-      const v = byId('newTech').value.trim();
-      if (!v) return alert('اكتب اسم الفني ثم اضغط +');
-      if (!technicians.includes(v)) technicians.push(v);
-      byId('newTech').value = '';
-      populateTechSelects();
-    });
+/* Add technician button */
+byId('btnAddTech').addEventListener('click', ()=> {
+  const v = byId('newTech').value.trim();
+  if(!v) return alert('اكتب اسم الفني ثم اضغط +');
+  if(!technicians.includes(v)) technicians.push(v);
+  byId('newTech').value = '';
+  populateTechSelects();
+});
 
-    async function init() {
-      renderStageTables();
-      STAGES.forEach(s => appendEmptyRowTo('stage-' + s.id.replace(/\s+/g, '-').replace(/[^ء-ي\w\s-]/g, '')));
+/* Initialize page */
+function init(){
+  renderStageTables();
+  STAGES.forEach(s => appendEmptyRowTo('stage-' + s.id.replace(/\s+/g,'-').replace(/[^\w\-ء-ي]/g,'')));
+  populateTechSelects();
+}
+window.addEventListener('load', init);
 
-      try {
-        const res = await fetch(url);
-        const result = await res.json();
-        if (result.success) {
-          technicians = result.technicians;
-          populateTechSelects();
-        }
-      } catch(error) {
-        console.error("Error fetching technicians:", error);
-      }
-    }
+</script>
 
-    init();
-  </script>
 </body>
 </html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
