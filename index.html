@@ -622,10 +622,20 @@ byId('btnAddTech').addEventListener('click', ()=> {
 });
 
 /* Initialize page */
-function init(){
+async function init() {
   renderStageTables();
-  STAGES.forEach(s => appendEmptyRowTo('stage-' + s.id.replace(/\s+/g,'-').replace(/[^\w\-ء-ي]/g,'')));
-  populateTechSelects();
+  STAGES.forEach(s => appendEmptyRowTo('stage-' + s.id.replace(/\s+/g, '-').replace(/[^ء-ي\w\s-]/g, '')));
+
+  try {
+    const res = await fetch(url);
+    const result = await res.json();
+    if (result.success) {
+      technicians = result.technicians;
+      populateTechSelects();
+    }
+  } catch(error) {
+    console.error("Error fetching technicians:", error);
+  }
 }
 window.addEventListener('load', init);
 
@@ -633,6 +643,7 @@ window.addEventListener('load', init);
 
 </body>
 </html>
+
 
 
 
