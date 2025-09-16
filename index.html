@@ -92,9 +92,6 @@
   <button id="btnExportJSON" class="btn secondary">تصدير JSON</button>
   <button id="btnExportPDF" class="btn secondary">تصدير PDF</button>
 
-  <select id="savedCodesDropdown" aria-label="استرجاع كود محفوظ" title="اختر كود محفوظ"></select>
-  <button id="btnLoadSaved" class="btn">استرجاع</button>
-
   <input id="internalMaterial" class="material-input" placeholder="الخامة الداخلية" title="الخامة الداخلية (نفس عرض اسم العميل)"/>
   <input id="externalMaterial" class="material-input" placeholder="الخامة الخارجية" title="الخامة الخارجية (نفس عرض اسم العميل)"/>
   <button id="btnAddMaterial" class="btn">+</button>
@@ -182,7 +179,7 @@
 
   <div id="stagesContainer"></div>
 
-  </form>
+</form>
 
 <script>
 /* ======= Configuration (unchanged order) ======= */
@@ -201,7 +198,7 @@ const STAGES = [
 /* technicians list persisted (unchanged) */
 let technicians = JSON.parse(localStorage.getItem('motabaa_techs') || '["محمود","يوسف","عبد الستار","محمد ربيع"]');
 
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx_g4JN6P2a8tUKo8-GsZWc0RhZwnJdq1WE_7axeJ1LcpJmeUyfuXCBI0j9LK7jvDrnZQ/exec'; // **استبدل هذا الرابط**
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxNg3IDRlQMv1dU-dl3WhDjGiEqDN_Gpqcd1jgBp_C8eYCQ_zJqOFNPcLHEDoj4q6lNQ/exec'; // **تم استبدال هذا الرابط**
 
 /* ===== helpers ===== */
 function byId(id){ return document.getElementById(id); }
@@ -402,26 +399,6 @@ function addExtraMaterial(value){
   byId('extraMaterialsContainer').appendChild(wrap);
 }
 
-/* refresh saved codes dropdown */
-function refreshSavedCodesDropdown(){
-  const dd = byId('savedCodesDropdown');
-  dd.innerHTML = '<option value="">استرجاع كود محفوظ...</option>';
-  // iterate through localStorage keys
-  Object.keys(localStorage).forEach(k=>{
-    if(k.startsWith('motabaa_') && k !== 'motabaa_techs'){
-      try{
-        const payload = JSON.parse(localStorage.getItem(k));
-        const code = payload.clientCode || k.replace('motabaa_','');
-        const name = payload.clientName || '';
-        const opt = document.createElement('option');
-        opt.value = code;
-        opt.textContent = code + (name ? (' — ' + name) : '');
-        dd.appendChild(opt);
-      }catch(e){}
-    }
-  });
-}
-
 /* Export JSON (includes materials + stages + top fields) */
 function exportJSON(){
   const clientCode = byId('clientCode').value.trim();
@@ -495,7 +472,7 @@ function exportPDF(){
   doc.save((byId('clientCode').value.trim() || 'export') + '.pdf');
 }
 
-/* Save (to Google Apps Script AND localStorage) - merged */
+/* Save (to Google Apps Script) - local storage removed */
 function saveAll(){
   const clientCode = byId('clientCode').value.trim();
   if(!clientCode){ alert('مطلوب: اكتب كود العميل قبل الحفظ'); return; }
@@ -513,12 +490,6 @@ function saveAll(){
     savedAt: new Date().toISOString()
   };
 
-  // store locally (so dropdown / recall works)
-  localStorage.setItem('motabaa_' + clientCode, JSON.stringify(payload));
-  localStorage.setItem('motabaa_techs', JSON.stringify(technicians));
-  refreshSavedCodesDropdown();
-
-  // also send to Google Apps Script (existing flow)
   const scriptURL = SCRIPT_URL;
   const msg = byId('recallMsg');
   msg.style.display = 'inline';
@@ -548,117 +519,82 @@ function saveAll(){
   });
 }
 
-/* Load for client code — extended to include materials & extraMaterials */
-function loadForClientCode(code){
-  const key = 'motabaa_' + code;
-  const raw = localStorage.getItem(key);
-  const recallMsg = byId('recallMsg');
-  if(!raw){
-    recallMsg.style.display = 'inline';
-    recallMsg.textContent = 'كود جديد — جاهز لإدخال بيانات جديدة';
-    setTimeout(()=> recallMsg.style.display = 'none', 1600);
-    return false;
-  }
-  try{
-    const payload = JSON.parse(raw);
-    // top fields
-    byId('clientName').value = payload.clientName || '';
-    byId('projectName').value = payload.projectName || '';
-    // materials
-    byId('internalMaterial').value = payload.internalMaterial || '';
-    byId('externalMaterial').value = payload.externalMaterial || '';
-    // rebuild extra materials
-    byId('extraMaterialsContainer').innerHTML = '';
-    (payload.extraMaterials || []).forEach(m => addExtraMaterial(m));
-
-    if(Array.isArray(payload.technicians) && payload.technicians.length){
-      technicians = payload.technicians;
+/* New load from Google Sheets (instead of localStorage) */
+function loadFromGoogleSheets(){
+    const code = byId('clientCode').value.trim();
+    if(!code){
+        alert('يرجى إدخال كود العميل للبحث.');
+        return;
     }
-    populateTechSelects();
 
-    // clear tables and rebuild rows using payload.stages
-    STAGES.forEach(stage=>{
-      const tableId = 'stage-' + stage.id.replace(/\s+/g,'-').replace(/[^\w\-ء-ي]/g,'');
-      const tbody = document.querySelector('#' + tableId + ' tbody');
-      tbody.innerHTML = '';
-      const rows = (payload.stages && payload.stages[stage.id]) || [];
-      if(rows.length === 0){
-        appendEmptyRowTo(tableId);
-      } else {
-        rows.forEach(r => {
-          const tpl = document.getElementById(stage.basic ? 'tpl-basic-row' : 'tpl-advanced-row');
-          const clone = tpl.content.cloneNode(true);
-          const tr = clone.querySelector('tr');
-          tr.dataset.stage = stage.id;
-          // fill values (same logic as original)
-          if(tr.querySelector('.item-type')) tr.querySelector('.item-type').value = r.type || "";
-          if(tr.querySelector('.item-name')) tr.querySelector('.item-name').value = r.itemName || "";
-          if(tr.querySelector('.tech-list')){
-            populateSingleTechSelect(tr.querySelector('.tech-list'));
-            tr.querySelector('.tech-list').value = r.tech || "";
-          }
-          if(tr.querySelector('.start-date')) tr.querySelector('.start-date').value = r.start || "";
-          if(tr.querySelector('.end-date')) tr.querySelector('.end-date').value = r.end || "";
-          if(r.duration) { tr.dataset.duration = r.duration; if(tr.querySelector('.duration')) tr.querySelector('.duration').value = r.duration; }
-          if(tr.querySelector('.units')) tr.querySelector('.units').value = r.units || "";
-          if(tr.querySelector('.notes')) tr.querySelector('.notes').value = r.notes || "";
-          if(tr.querySelector('.status-select')) tr.querySelector('.status-select').value = r.status || "";
-          tbody.appendChild(tr);
-          setupRow(tr);
-          updateRowColor(tr);
+    const recallMsg = byId('recallMsg');
+    recallMsg.style.display = 'inline';
+    recallMsg.textContent = 'جاري البحث...';
+
+    const scriptURL = SCRIPT_URL + '?clientCode=' + encodeURIComponent(code);
+
+    fetch(scriptURL)
+        .then(response => response.json())
+        .then(result => {
+            if(result.success && result.data){
+                const payload = result.data;
+                byId('clientName').value = payload.clientName || '';
+                byId('projectName').value = payload.projectName || '';
+                byId('internalMaterial').value = payload.internalMaterial || '';
+                byId('externalMaterial').value = payload.externalMaterial || '';
+                byId('extraMaterialsContainer').innerHTML = '';
+                (payload.extraMaterials || []).forEach(m => addExtraMaterial(m));
+
+                if(Array.isArray(payload.technicians) && payload.technicians.length){
+                  technicians = payload.technicians;
+                }
+                populateTechSelects();
+
+                STAGES.forEach(stage=>{
+                  const tableId = 'stage-' + stage.id.replace(/\s+/g,'-').replace(/[^\w\-ء-ي]/g,'');
+                  const tbody = document.querySelector('#' + tableId + ' tbody');
+                  tbody.innerHTML = '';
+                  const rows = (payload.stages && payload.stages[stage.id]) || [];
+                  if(rows.length === 0){
+                    appendEmptyRowTo(tableId);
+                  } else {
+                    rows.forEach(r => {
+                      const tpl = document.getElementById(stage.basic ? 'tpl-basic-row' : 'tpl-advanced-row');
+                      const clone = tpl.content.cloneNode(true);
+                      const tr = clone.querySelector('tr');
+                      tr.dataset.stage = stage.id;
+                      if(tr.querySelector('.item-type')) tr.querySelector('.item-type').value = r.type || "";
+                      if(tr.querySelector('.item-name')) tr.querySelector('.item-name').value = r.itemName || "";
+                      if(tr.querySelector('.tech-list')){
+                        populateSingleTechSelect(tr.querySelector('.tech-list'));
+                        tr.querySelector('.tech-list').value = r.tech || "";
+                      }
+                      if(tr.querySelector('.start-date')) tr.querySelector('.start-date').value = r.start || "";
+                      if(tr.querySelector('.end-date')) tr.querySelector('.end-date').value = r.end || "";
+                      if(r.duration) { tr.dataset.duration = r.duration; if(tr.querySelector('.duration')) tr.querySelector('.duration').value = r.duration; }
+                      if(tr.querySelector('.units')) tr.querySelector('.units').value = r.units || "";
+                      if(tr.querySelector('.notes')) tr.querySelector('.notes').value = r.notes || "";
+                      if(tr.querySelector('.status-select')) tr.querySelector('.status-select').value = r.status || "";
+                      tbody.appendChild(tr);
+                      setupRow(tr);
+                      updateRowColor(tr);
+                    });
+                  }
+                });
+
+                recallMsg.textContent = 'تم استرجاع البيانات بنجاح من جوجل شيت!';
+            } else {
+                recallMsg.textContent = 'لم يتم العثور على الكود في جوجل شيت.';
+            }
+        })
+        .catch(error => {
+            console.error("Error fetching data:", error);
+            recallMsg.textContent = 'حدث خطأ في الاتصال. يرجى المحاولة مرة أخرى.';
+        })
+        .finally(() => {
+            setTimeout(() => recallMsg.style.display = 'none', 2200);
         });
-      }
-    });
-
-    recallMsg.style.display = 'inline';
-    recallMsg.textContent = 'تم استرجاع بيانات الكود: ' + code;
-    setTimeout(()=> recallMsg.style.display = 'none', 1600);
-    return true;
-  } catch(err){
-    console.error('load error', err);
-    return false;
-  }
 }
-
-/* Search button behaviour: search by code first, then by name */
-byId('btnSearch').addEventListener('click', ()=>{
-  const code = byId('clientCode').value.trim();
-  const name = byId('clientName').value.trim();
-  if(code){
-    const ok = loadForClientCode(code);
-    if(!ok) alert('لم يتم العثور على الكود في السجلات المحلية');
-    return;
-  }
-  if(name){
-    // find first match by clientName substring
-    let found = null;
-    Object.keys(localStorage).forEach(k=>{
-      if(k.startsWith('motabaa_')){
-        try{
-          const p = JSON.parse(localStorage.getItem(k));
-          if(p.clientName && p.clientName.indexOf(name) !== -1 && !found){
-            found = k.replace('motabaa_','');
-          }
-        }catch(e){}
-      }
-    });
-    if(found){
-      byId('clientCode').value = found;
-      loadForClientCode(found);
-    } else {
-      alert('لم يتم العثور على اسم مطابق في السجلات المحلية');
-    }
-    return;
-  }
-  alert('اكتب كود العميل أو اسم العميل للبحث');
-});
-
-/* Load selected from dropdown */
-byId('btnLoadSaved').addEventListener('click', ()=>{
-  const code = byId('savedCodesDropdown').value;
-  if(!code) return alert('اختر كود من القائمة');
-  loadForClientCode(code);
-});
 
 /* Add material button */
 byId('btnAddMaterial').addEventListener('click', (e)=>{
@@ -669,15 +605,12 @@ byId('btnAddMaterial').addEventListener('click', (e)=>{
 /* Save button */
 byId('btnSave').addEventListener('click', saveAll);
 
+/* Search button */
+byId('btnSearch').addEventListener('click', loadFromGoogleSheets);
+
 /* Export buttons */
 byId('btnExportJSON').addEventListener('click', exportJSON);
 byId('btnExportPDF').addEventListener('click', exportPDF);
-
-/* when savedCodesDropdown changed (select), set clientCode input (no auto load) */
-byId('savedCodesDropdown').addEventListener('change', (e)=>{
-  const v = e.target.value;
-  if(v) byId('clientCode').value = v;
-});
 
 /* Add technician button */
 byId('btnAddTech').addEventListener('click', ()=> {
@@ -693,8 +626,6 @@ function init(){
   renderStageTables();
   STAGES.forEach(s => appendEmptyRowTo('stage-' + s.id.replace(/\s+/g,'-').replace(/[^\w\-ء-ي]/g,'')));
   populateTechSelects();
-  // load any existing materials in case user had saved one code already
-  refreshSavedCodesDropdown();
 }
 window.addEventListener('load', init);
 
