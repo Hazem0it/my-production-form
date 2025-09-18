@@ -441,7 +441,7 @@ byId('btnSave').addEventListener('click', ()=>{
   };
 
   // إرسال البيانات إلى Google Apps Script
-  fetch('', {
+  fetch('https://script.google.com/macros/s/AKfycbwQ5Ntu_Am8JCQJKIhdloXbjOXbZfC95G2mEuES-WC87efzeIySDyYGj6O-ylwLPtkYTw/exec', {
       method: 'POST',
       body: JSON.stringify(dataToSend),
       headers: {
@@ -471,7 +471,7 @@ byId('btnSearch').addEventListener('click', ()=>{
     }
 
     // استرجاع البيانات من جوجل شيتس
-    fetch(`?clientCode=${clientCode}`)
+    fetch(`https://script.google.com/macros/s/AKfycbwQ5Ntu_Am8JCQJKIhdloXbjOXbZfC95G2mEuES-WC87efzeIySDyYGj6O-ylwLPtkYTw/exec?clientCode=${clientCode}`)
         .then(response => response.json())
         .then(clientData => {
             if (clientData) {
