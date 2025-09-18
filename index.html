@@ -441,7 +441,7 @@ byId('btnSave').addEventListener('click', ()=>{
   };
 
   // إرسال البيانات إلى Google Apps Script
-  fetch('https://script.google.com/macros/s/AKfycbxsJGOev-waxpLd9DfMu4J3o5dElWNC1iU3ZeXrNytfR7PIPSjRFBatE55REeH8XGJ4jQ/exec', {
+  fetch('https://script.google.com/macros/s/AKfycbzNCLqev1c3hVpyUka0dHM6CBToF5JYKE-aD9XUpaShmnUyUMdutbUuEcFOQm3cIYlnVQ/exec', {
       method: 'POST',
       body: JSON.stringify(dataToSend),
       headers: {
@@ -471,7 +471,7 @@ byId('btnSearch').addEventListener('click', ()=>{
     }
 
     // استرجاع البيانات من جوجل شيتس
-    fetch(`https://script.google.com/macros/s/AKfycbxsJGOev-waxpLd9DfMu4J3o5dElWNC1iU3ZeXrNytfR7PIPSjRFBatE55REeH8XGJ4jQ/exec?clientCode=${clientCode}`)
+    fetch(`https://script.google.com/macros/s/AKfycbzNCLqev1c3hVpyUka0dHM6CBToF5JYKE-aD9XUpaShmnUyUMdutbUuEcFOQm3cIYlnVQ/exec?clientCode=${clientCode}`)
         .then(response => response.json())
         .then(clientData => {
             if (clientData) {
@@ -683,6 +683,7 @@ updateSavedCodesDropdown();
 </script>
 </body>
 </html>
+
 
 
 
