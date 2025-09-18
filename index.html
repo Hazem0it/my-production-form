@@ -462,71 +462,72 @@ byId('btnSave').addEventListener('click', ()=>{
   });
 });
 
-// هذا الكود يستبدل كود البحث الحالي
+// الكود المصحح لزر البحث
 byId('btnSearch').addEventListener('click', ()=>{
-    const clientCode = byId('clientCode').value.trim();
-    if (!clientCode) {
-        alert('من فضلك أدخل كود العميل أولاً.');
-        return;
-    }
+  const clientCode = byId('clientCode').value.trim();
+  if(!clientCode) {
+    alert('من فضلك أدخل كود العميل أولاً.');
+    return;
+  }
+  
+  // URL الخاص بدالة البحث (doGet) في Google Apps Script
+  const url = `https://script.google.com/macros/s/AKfycbzH-RZg4LBcKwpGwA0vKqb38nacd2Cq5zfVii56oH9Ed4kDsL9CspODlyJWrJIdZK5FcQ/exec?clientCode=${clientCode}`;
 
-    // استرجاع البيانات من جوجل شيتس
-    fetch(`https://script.google.com/macros/s/AKfycbzH-RZg4LBcKwpGwA0vKqb38nacd2Cq5zfVii56oH9Ed4kDsL9CspODlyJWrJIdZK5FcQ/exec?clientCode=${clientCode}`)
-        .then(response => response.json())
-        .then(clientData => {
-            if (clientData) {
-                // ملء الحقول بالبيانات المسترجعة
-                byId('clientName').value = clientData['اسم العميل'] || '';
-                byId('projectName').value = clientData['اسم المشروع'] || '';
-                byId('internalMaterial').value = clientData['الخامة الداخلية'] || '';
-                byId('externalMaterial').value = clientData['الخامة الخارجية'] || '';
-                
-                // ملء جدول المواد الإضافية
-                const extraMaterialsTableBody = byId('extraMaterialsTable').querySelector('tbody');
-                extraMaterialsTableBody.innerHTML = '';
-                const extraMaterials = JSON.parse(clientData['خامات إضافية']);
-                if (extraMaterials) {
-                    extraMaterials.forEach(item => {
-                        const newRow = extraMaterialsTableBody.insertRow();
-                        newRow.innerHTML = `<td>${item.name}</td><td>${item.quantity}</td><td class="action-cell"><button class="btn-remove">حذف</button></td>`;
-                    });
-                }
-                
-                // ملء جدول المراحل
-                const stagesTableBody = byId('stagesTable').querySelector('tbody');
-                stagesTableBody.innerHTML = '';
-                const stages = JSON.parse(clientData['بيانات المراحل']);
-                if (stages) {
-                    stages.forEach(stage => {
-                        const newRow = stagesTableBody.insertRow();
-                        newRow.innerHTML = `
-                            <td>${stage.stage}</td>
-                            <td>${stage.type}</td>
-                            <td>${stage.name}</td>
-                            <td>${stage.tech}</td>
-                            <td>${stage.start}</td>
-                            <td>${stage.end}</td>
-                            <td>${stage.duration}</td>
-                            <td>${stage.units}</td>
-                            <td>${stage.notes}</td>
-                            <td>${stage.status}</td>
-                            <td class="action-cell"><button class="btn-remove">حذف</button></td>
-                        `;
-                    });
-                }
+  fetch(url)
+    .then(response => response.json())
+    .then(clientData => {
+      if (clientData && clientData.status !== 'error') {
+        // ملء الحقول الرئيسية
+        byId('clientName').value = clientData['اسم العميل'] || '';
+        byId('projectName').value = clientData['اسم المشروع'] || '';
+        byId('internalMaterial').value = clientData['الخامة الداخلية'] || '';
+        byId('externalMaterial').value = clientData['الخامة الخارجية'] || '';
 
-                alert('تم استرجاع بيانات العميل بنجاح.');
-            } else {
-                alert('لم يتم العثور على بيانات لهذا العميل.');
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('حدث خطأ في الاتصال بالخادم.');
+        // تفريغ وإعادة ملء جداول المراحل
+        STAGES.forEach(stage => {
+          const tbl = byId(stageId(stage.id));
+          if (tbl) {
+            tbl.querySelector('tbody').innerHTML = '';
+          }
         });
+        
+        if (clientData['بيانات المراحل'] && clientData['بيانات المراحل'].length > 0) {
+          clientData['بيانات المراحل'].forEach(stageRow => {
+            const stageTable = byId(stageId(stageRow.stage));
+            if (stageTable) {
+              const basicStage = STAGES.find(s => s.id === stageRow.stage).basic;
+              addRowToTable(stageTable, basicStage, stageRow);
+            }
+          });
+        }
+        
+        // إعادة ملء قسم الخامات الإضافية
+        const extraMaterialsContainer = byId('extraMaterialsContainer');
+        extraMaterialsContainer.innerHTML = '';
+        if (clientData['خامات إضافية']) {
+          const extraMaterials = clientData['خامات إضافية'].split(' | ');
+          extraMaterials.forEach(mat => {
+            const parts = mat.split(',').map(p => p.trim());
+            const div = create('div'); div.className = 'material-wrap';
+            parts.forEach(p => {
+              if (p) div.appendChild(create('span', p));
+            });
+            const delBtn = create('button', '-'); delBtn.className='del-material'; delBtn.onclick = ()=> div.remove();
+            div.appendChild(delBtn);
+            extraMaterialsContainer.appendChild(div);
+          });
+        }
+        
+        alert('تم استرجاع بيانات العميل بنجاح.');
+      } else {
+        alert('لم يتم العثور على بيانات لهذا العميل.');
+      }
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      alert('حدث خطأ في الاتصال بالخادم.');
+    });
 });
-
-
 // تحديث Dropdown للأكواد المحفوظة
 function updateSavedCodesDropdown(){
   const dropdown = byId('savedCodesDropdown');
