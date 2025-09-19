@@ -208,7 +208,7 @@
 
 <script>
 // ** ملاحظة هامة: يجب تحديث هذا الرابط بعد كل نشر جديد للكود **
-const APP_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzOFPjdQ0WYaqs164rE_N9fUvfF-75yiFCASg4LyDkr_0Ccg1iidLjnoU2kEfvq0tztIA/exec';
+const APP_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbztzdqIjwjGe4C6Tqg6GKgHCsHmXiPMccdmsG_psJtelo5MBKM59_IITSwA-ioEeIZyHQ/exec';
 
 const STAGES = [
   { id: "التقطيع", basic: true },
@@ -485,7 +485,7 @@ byId('btnSearch').addEventListener('click', ()=>{
                 // ملء الخامات الأساسية
                 byId('internalMaterial').value = clientData['الخامة الداخلية'] || '';
                 byId('externalMaterial').value = clientData['الخامة الخارجية'] || '';
-
+                
                 // إعادة بناء المواد الإضافية
                 byId('extraMaterialsContainer').innerHTML = '';
                 const extraMaterials = clientData['خامات إضافية'];
@@ -511,7 +511,7 @@ byId('btnSearch').addEventListener('click', ()=>{
                     const stageTable = byId(stageId(stageDef.id));
                     stageTable.querySelector('tbody').innerHTML = ''; // Clear existing rows
                     
-                    const stageRows = (clientData['بيانات المراحل'] || []).filter(r => r.stage === stageDef.stage);
+                    const stageRows = (clientData['بيانات المراحل'] || []).filter(r => r.stage === stageDef.id);
                     if (stageRows.length > 0) {
                         stageRows.forEach(rowData => addRowToTable(stageTable, stageDef.basic, rowData));
                     } else {
