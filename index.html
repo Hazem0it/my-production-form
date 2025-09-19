@@ -433,7 +433,7 @@ byId('btnSave').addEventListener('click', ()=>{
     'تاريخ التوريد': byId('chkSupply').checked  ? today : ""
   };
 
-  fetch('https://script.google.com/macros/s/AKfycbxrweXXWuNKcqqsuMyTN6ErBiylO87i81-BG_zHYhjlPSrox2meQxEIzgAq5BovQRPQwQ/exec', {
+  fetch('https://script.google.com/macros/s/AKfycbxpFqOkNwg-IG3ZNdJ_ddaCTAfFCVrQdtLiY9t471KNLC9WWaW9slYcEpRD4DLSfi7m1Q/exec', {
       method: 'POST',
       body: JSON.stringify(dataToSend),
       headers: {
@@ -462,7 +462,7 @@ byId('btnSearch').addEventListener('click', ()=>{
         return;
     }
 
-    fetch(`https://script.google.com/macros/s/AKfycbxrweXXWuNKcqqsuMyTN6ErBiylO87i81-BG_zHYhjlPSrox2meQxEIzgAq5BovQRPQwQ/exec?clientCode=${clientCode}`)
+    fetch(`https://script.google.com/macros/s/AKfycbxpFqOkNwg-IG3ZNdJ_ddaCTAfFCVrQdtLiY9t471KNLC9WWaW9slYcEpRD4DLSfi7m1Q/exec?clientCode=${clientCode}`)
         .then(response => response.json())
         .then(clientData => {
             if (clientData && clientData.status !== 'error') {
@@ -587,5 +587,6 @@ updateTechSelects();
 </script>
 </body>
 </html>
+
 
 
