@@ -207,9 +207,6 @@
 </form>
 
 <script>
-// ** ملاحظة هامة: يجب تحديث هذا الرابط بعد كل نشر جديد للكود **
-const APP_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxEKMVNpzJiOE9C8VlxoH7Xt6RQJurPZJMPWppEIy_3qtY4Is8boHyqpDLa7HzSfiHIvQ/exec';
-
 const STAGES = [
   { id: "التقطيع", basic: true },
   { id: "المفحار", basic: true },
@@ -444,7 +441,7 @@ byId('btnSave').addEventListener('click', ()=>{
   };
 
   // إرسال البيانات إلى Google Apps Script
-  fetch(APP_SCRIPT_URL, {
+  fetch('https://script.google.com/macros/s/AKfycbycgZnotDQ54-g0lQIPkNEX_VCDhjZBut9moM3lsOIwGRkrIukp8ntJPl7WsACA1k59hg/exec', {
       method: 'POST',
       body: JSON.stringify(dataToSend),
       headers: {
@@ -456,7 +453,7 @@ byId('btnSave').addEventListener('click', ()=>{
       if (result.status === 'success') {
           alert('تم الحفظ بنجاح في جوجل شيتس!');
       } else {
-          alert('حدث خطأ: ' + result.message);
+          alert('حدث خطأ في الحفظ.');
       }
   })
   .catch(error => {
@@ -474,66 +471,71 @@ byId('btnSearch').addEventListener('click', ()=>{
     }
 
     // استرجاع البيانات من جوجل شيتس
-    fetch(`${APP_SCRIPT_URL}?clientCode=${clientCode}`)
+    fetch(`https://script.google.com/macros/s/AKfycbycgZnotDQ54-g0lQIPkNEX_VCDhjZBut9moM3lsOIwGRkrIukp8ntJPl7WsACA1k59hg/exec?clientCode=${clientCode}`)
         .then(response => response.json())
         .then(clientData => {
-            if (clientData && clientData.status !== 'error') {
+            if (clientData.status !== 'error') {
                 // ملء الحقول بالبيانات المسترجعة
                 byId('clientName').value = clientData['اسم العميل'] || '';
                 byId('projectName').value = clientData['اسم المشروع'] || '';
-                
-                // ملء الخامات الأساسية
                 byId('internalMaterial').value = clientData['الخامة الداخلية'] || '';
                 byId('externalMaterial').value = clientData['الخامة الخارجية'] || '';
                 
-                // إعادة بناء المواد الإضافية
+                // تحديد مربعات الاختيار بناءً على وجود التاريخ
+                byId('chkStorage').checked = !!clientData['تاريخ التخزين'];
+                byId('chkSupply').checked = !!clientData['تاريخ التوريد'];
+                
+                // ملء جدول المراحل
+                STAGES.forEach(stage=>{
+                  const tbl = byId(stageId(stage.id));
+                  if(!tbl) return;
+                  tbl.querySelector('tbody').innerHTML = '';
+                  const stageRows = (clientData['بيانات المراحل'] || []).filter(r => r.stage === stage.id);
+                  if(stageRows.length){
+                    stageRows.forEach(rowData => addRowToTable(tbl, stage.basic, rowData));
+                  } else {
+                    addRowToTable(tbl, stage.basic);
+                  }
+                });
+
+                // ملء الخامات الإضافية
                 byId('extraMaterialsContainer').innerHTML = '';
-                const extraMaterials = clientData['خامات إضافية'];
-                if (extraMaterials) {
-                    const materials = extraMaterials.split(' | ');
-                    materials.forEach(matStr => {
-                        const parts = matStr.split(', ');
-                        const intMat = parts.find(p => p.includes('داخلي:'))?.replace('داخلي: ','') || '';
-                        const extMat = parts.find(p => p.includes('خارجي:'))?.replace('خارجي: ','') || '';
-                        if(intMat || extMat) {
-                            const div = create('div'); div.className='material-wrap';
-                            if(intMat) div.appendChild(create('span',`الخامة الداخلية: ${intMat}`));
-                            if(extMat) div.appendChild(create('span',`الخامة الخارجية: ${extMat}`));
-                            const delBtn = create('button','-'); delBtn.className='del-material'; delBtn.onclick = ()=> div.remove();
-                            div.appendChild(delBtn);
-                            byId('extraMaterialsContainer').appendChild(div);
-                        }
+                const extraMaterialsStr = clientData['خامات إضافية'] || '';
+                if (extraMaterialsStr) {
+                    const materialPairs = extraMaterialsStr.split(' | ');
+                    materialPairs.forEach(pair => {
+                        const div = create('div'); div.className='material-wrap';
+                        if(pair.includes('داخلي:')) div.appendChild(create('span', pair.replace('داخلي: ', 'الخامة الداخلية: ')));
+                        if(pair.includes('خارجي:')) div.appendChild(create('span', pair.replace('خارجي: ', 'الخامة الخارجية: ')));
+                        const delBtn = create('button', '-'); delBtn.className='del-material'; delBtn.onclick = ()=> div.remove();
+                        div.appendChild(delBtn);
+                        byId('extraMaterialsContainer').appendChild(div);
                     });
                 }
                 
-                // ملء جدول المراحل
-                STAGES.forEach(stageDef => {
-                    const stageTable = byId(stageId(stageDef.id));
-                    stageTable.querySelector('tbody').innerHTML = ''; // Clear existing rows
-                    
-                    const stageRows = (clientData['بيانات المراحل'] || []).filter(r => r.stage === stageDef.id);
-                    if (stageRows.length > 0) {
-                        stageRows.forEach(rowData => addRowToTable(stageTable, stageDef.basic, rowData));
-                    } else {
-                        addRowToTable(stageTable, stageDef.basic);
-                    }
-                });
+                // تحديث رسالة الاسترجاع
+                let recallText = `تم استرجاع البيانات ✅`;
+                if(clientData['آخر تحديث']) recallText += ` (آخر تحديث: ${clientData['آخر تحديث']})`;
+                if(clientData['تاريخ التخزين']) recallText += ` | 📦 تاريخ التخزين: ${clientData['تاريخ التخزين']}`;
+                if(clientData['تاريخ التوريد']) recallText += ` | 🚚 تاريخ التوريد: ${clientData['تاريخ التوريد']}`;
 
-                alert('تم استرجاع بيانات العميل بنجاح.');
+                byId('recallMsg').textContent = recallText;
+                byId('recallMsg').style.display = 'inline';
+                
+                updateTechSelects();
+
             } else {
                 alert('لم يتم العثور على بيانات لهذا العميل.');
             }
         })
         .catch(error => {
             console.error('Error:', error);
-            alert('حدث خطأ في الاتصال بالخادم. تأكد من أن الكود منشـور بشكل صحيح.');
+            alert('حدث خطأ في الاتصال بالخادم.');
         });
 });
 
+
 // تحديث Dropdown للأكواد المحفوظة
-// ملاحظة: هذا الكود يعتمد على البيانات المخزنة محلياً وليس على جوجل شيت.
-// للحصول على قائمة محدثة من الأكواد المحفوظة في الشيت، يجب إضافة دالة جديدة إلى Google Apps Script
-// ثم استدعاؤها هنا.
 function updateSavedCodesDropdown(){
   const dropdown = byId('savedCodesDropdown');
   dropdown.innerHTML = '<option value="">اختر كود محفوظ</option>';
@@ -547,19 +549,92 @@ function updateSavedCodesDropdown(){
   });
 }
 
-// استرجاع من DropDown
+// استرجاع بيانات العميل بالكامل
+function recallClientData(code){
+  const client = clientsData[code];
+  if(!client) return false;
+
+  byId('clientCode').value = code;
+  byId('clientName').value = client.clientName || '';
+  byId('projectName').value = client.projectName || '';
+  byId('internalMaterial').value = client.internalMaterial || '';
+  byId('externalMaterial').value = client.externalMaterial || '';
+
+  // إعادة بناء المواد الإضافية
+  byId('extraMaterialsContainer').innerHTML = '';
+  if(Array.isArray(client.extraMaterials)){
+    client.extraMaterials.forEach(mat=>{
+      const div = create('div'); div.className = 'material-wrap';
+      if(mat.internal) div.appendChild(create('span',`الخامة الداخلية: ${mat.internal}`));
+      if(mat.external) div.appendChild(create('span',`الخامة الخارجية: ${mat.external}`));
+      const delBtn = create('button','-'); delBtn.className='del-material'; delBtn.onclick = ()=> div.remove();
+      div.appendChild(delBtn);
+      byId('extraMaterialsContainer').appendChild(div);
+    });
+  } else {
+    // إذا لم تكن مصفوفة، حاول وضع الحقول الأساسية
+    if(client.internalMaterial || client.externalMaterial){
+      const div = create('div'); div.className = 'material-wrap';
+      if(client.internalMaterial) div.appendChild(create('span',`الخامة الداخلية: ${client.internalMaterial}`));
+      if(client.externalMaterial) div.appendChild(create('span',`الخامة الخارجية: ${client.externalMaterial}`));
+      const delBtn = create('button','-'); delBtn.className='del-material'; delBtn.onclick = ()=> div.remove();
+      div.appendChild(delBtn);
+      byId('extraMaterialsContainer').appendChild(div);
+    }
+  }
+
+  // تفريغ كل الجداول وإعادتها بحسب البيانات
+  STAGES.forEach(stage=>{
+    const tbl = byId(stageId(stage.id));
+    if(!tbl) return;
+    tbl.querySelector('tbody').innerHTML = '';
+    const stageRows = (client.stages || []).filter(r => r.stage === stage.id);
+    if(stageRows.length){
+      stageRows.forEach(rowData => addRowToTable(tbl, stage.basic, rowData));
+    } else {
+      // لو مفيش صفوف مخزنة، ضيف صف واحد فارغ
+      addRowToTable(tbl, stage.basic);
+    }
+  });
+
+  // تعديل هنا لعرض تواريخ التخزين/التوريد أيضاً
+  let recallText = `تم استرجاع البيانات ✅${client.lastUpdate ? ' (آخر تحديث: ' + client.lastUpdate + ')' : ''}`;
+  if(client.storageDate) recallText += ` | 📦 تاريخ التخزين: ${client.storageDate}`;
+  if(client.supplyDate)  recallText += ` | 🚚 تاريخ التوريد: ${client.supplyDate}`;
+
+  byId('recallMsg').textContent = recallText;
+  byId('recallMsg').style.display = 'inline';
+  updateTechSelects();
+  return true;
+}
+
+// زر البحث 🔎
+byId('btnSearch').addEventListener('click', ()=>{
+  const code = byId('clientCode').value.trim();
+  if(!code) return alert('أدخل كود العميل للبحث');
+  if(!recallClientData(code)){
+    byId('recallMsg').textContent = 'لم يتم العثور على بيانات ❌';
+    byId('recallMsg').style.display = 'inline';
+  }
+});
+// استرجاع من DropDown (محسّن: يدعم change + زر الاسترجاع)
 const savedDropdown = byId('savedCodesDropdown');
+
+// عند الضغط على زر "استرجاع"
 byId('btnLoadSaved').addEventListener('click', ()=>{
   const code = savedDropdown.value;
   if(!code) return alert('اختر كود محفوظ أولاً');
   byId('clientCode').value = code;
   byId('btnSearch').click();
+  // اختياري: ارجع الافتراضي في القائمة بعد التحميل
+  // savedDropdown.selectedIndex = 0;
 });
 
-// عند تغير الاختيار في الـ dropdown
+// عند تغير الاختيار في الـ dropdown — يحمّل تلقائياً
 savedDropdown.addEventListener('change', ()=>{
   const code = savedDropdown.value;
   if(!code) {
+    // لو اخترت الخيار الافتراضي (فارغ) نعمل لا شيء
     return;
   }
   byId('clientCode').value = code;
@@ -616,6 +691,3 @@ updateSavedCodesDropdown();
 </script>
 </body>
 </html>
-
-
-
